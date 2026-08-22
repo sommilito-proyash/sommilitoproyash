@@ -1,0 +1,2726 @@
+{
+  "months": [
+    "জানুয়ারি",
+    "ফেব্রুয়ারি",
+    "মার্চ",
+    "এপ্রিল",
+    "মে",
+    "জুন",
+    "জুলাই",
+    "আগস্ট",
+    "সেপ্টেম্বর",
+    "অক্টোবর",
+    "নভেম্বর",
+    "ডিসেম্বর"
+  ],
+  "members": [
+    {
+      "id": 1,
+      "name": "Fahim Bin Wahab",
+      "monthly": 2000.0,
+      "phone": "0170655335",
+      "address": "Jamsing, Savar, Dhaka",
+      "photo": "/static/uploads/member_1.jpeg",
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "S.M. Fakhrul Islam (Raihan)",
+      "monthly": 2000.0,
+      "phone": "01670984339",
+      "address": "Jamsing, Savar, Dhaka",
+      "photo": "/static/uploads/member_2.jpeg",
+      "active": true
+    },
+    {
+      "id": 3,
+      "name": "মোঃ মাহবুব হাসান",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX03",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 3",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 4,
+      "name": "মোঃ তানভীর আহমেদ",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX04",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 4",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 5,
+      "name": "মোঃ কামরুল হাসান",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX05",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 5",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 6,
+      "name": "মোঃ জাহিদুল ইসলাম",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX06",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 6",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 7,
+      "name": "মোঃ নাসির উদ্দিন",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX07",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 7",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 8,
+      "name": "মোঃ আরিফ হোসেন",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX08",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 8",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 9,
+      "name": "মোঃ শামীম আহমেদ",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX09",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 9",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 10,
+      "name": "মোঃ মিজানুর রহমান",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX10",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 10",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 11,
+      "name": "মোঃ রাকিবুল হাসান",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX11",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 11",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 12,
+      "name": "মোঃ ফারুক হোসেন",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX12",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 12",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 13,
+      "name": "মোঃ ইমরান কবির",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX13",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 13",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 14,
+      "name": "মোঃ সোহেল রানা",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX14",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 14",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 15,
+      "name": "মোঃ আশরাফুল ইসলাম",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX15",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 15",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 16,
+      "name": "মোঃ মনির হোসেন",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX16",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 16",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 17,
+      "name": "মোঃ আল-আমিন",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX17",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 17",
+      "photo": "",
+      "active": true
+    },
+    {
+      "id": 18,
+      "name": "মোঃ হাসান মাহমুদ",
+      "monthly": 1000,
+      "phone": "01XXXXXXXX18",
+      "address": "ডেমো ঠিকানা, ঢাকা — সদস্য 18",
+      "photo": "",
+      "active": true
+    }
+  ],
+  "years": {
+    "2020": {
+      "1": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "2": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "3": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "4": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "5": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "6": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "7": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "8": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "9": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "10": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "11": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "12": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "13": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "14": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "15": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "16": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "17": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "18": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      }
+    },
+    "2021": {
+      "1": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "2": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "3": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "4": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "5": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "6": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "7": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "8": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "9": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "10": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "11": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "12": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "13": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "14": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "15": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "16": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "17": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "18": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      }
+    },
+    "2022": {
+      "1": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "2": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "3": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "4": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "5": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "6": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "7": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "8": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "9": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "10": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "11": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "12": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "13": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "14": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "15": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "16": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "17": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "18": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      }
+    },
+    "2023": {
+      "1": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          20000.0,
+          0
+        ]
+      },
+      "2": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "3": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "4": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "5": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "6": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "7": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "8": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "9": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "10": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "11": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "12": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "13": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "14": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "15": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "16": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "17": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "18": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      }
+    },
+    "2024": {
+      "1": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "2": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "3": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "4": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "5": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "6": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "7": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "8": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "9": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "10": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "11": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "12": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "13": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "14": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "15": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "16": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "17": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "18": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      }
+    },
+    "2025": {
+      "1": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "2": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "3": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "4": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "5": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "6": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "7": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "8": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "9": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "10": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "11": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "12": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "13": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "14": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "15": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "16": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "17": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "18": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      }
+    },
+    "2026": {
+      "1": {
+        "payments": [
+          false,
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false
+        ],
+        "down_payments": [
+          0.0,
+          0
+        ]
+      },
+      "2": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          10000.0,
+          0
+        ]
+      },
+      "3": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "4": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "5": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "6": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "7": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "8": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "9": {
+        "payments": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "10": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "11": {
+        "payments": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0.0
+        ]
+      },
+      "12": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "13": {
+        "payments": [
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "14": {
+        "payments": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "15": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "16": {
+        "payments": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "17": {
+        "payments": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      },
+      "18": {
+        "payments": [
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "down_payments": [
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "notices": [
+    {
+      "id": 1,
+      "title": "হ্যালো সম্মিলিত প্রয়াস",
+      "body": "এটা একটা ডেমো দিলাম। হালনাগাদ তথ্য পরে আপডেট করা হবে।",
+      "pinned": false,
+      "created_at": "2026-08-22 22:32"
+    }
+  ],
+  "comments": {}
+}
