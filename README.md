@@ -1,49 +1,31 @@
-# সম্মিলিত প্রয়াস — Version 6.1
+# সম্মিলিত প্রয়াস — Version 6.2
 
-V6 is based on the supplied Version 5 project and keeps the existing Supabase tables/data while adding the new yearly accounting rules and member login.
+Version 6.1-এর উপর ভিত্তি করে:
+- Common Member Login
+- আলাদা Admin Login
+- Admin Panel থেকে Common Member Email/Password পরিবর্তন
+- Member login ছাড়া website-এর member/accounting information দেখা যাবে না
+- Existing Supabase accounting structure unchanged
 
-## Version 6.1 improvements
-- Faster year switching and page loading: yearly settings and all annual payment records are loaded in bulk instead of one Supabase query per member/year.
-- Faster overall totals across all years for the same reason.
-- The accounting rules and login model from V6 are unchanged.
+## Deployment
+1. Existing V6.1 files-এর backup রাখুন।
+2. এই package-এর changed files repository-তে update করুন।
+3. Supabase SQL Editor-এ `v6.2_supabase.sql` একবার Run করুন।
+4. Render Environment Variables-এ `MEMBER_EMAIL` এবং `MEMBER_PASSWORD` দিন।
+5. Render latest commit deploy করুন।
+6. Admin Login করে Member Login Settings থেকে common credentials পরিবর্তন করুন।
 
-## What changed
-- Monthly contribution is set **separately for each year**.
-- Two Down Payment options remain available every year.
-- Each Down Payment can independently be marked **Mandatory** for a selected year and given an amount.
-- A mandatory unpaid Down Payment becomes arrear; Admin can mark each member's Down Payment as Paid/Due.
-- Yearly Deposit and Arrear include monthly contributions plus mandatory Down Payments.
-- Overall Deposit and Arrear are calculated across all years.
-- Each member has year-wise and overall totals.
-- Public visitors can no longer see financial/member information. Login is required.
-- Members log in with their email and password and can view the member information pages.
-- Only Admin can edit members, payment records, yearly rules, notices and member status.
-- Admin can set/reset a member's login password from Edit Member.
-- Existing Notice Board, comments, member add/remove, photos and English month/year labels are retained.
 
-## Important: Supabase SQL
-Run `v6_supabase.sql` once in **Supabase → SQL Editor** before starting V6. It adds:
-- `annual_settings`
-- `annual_records.down_payment_1_paid`
-- `annual_records.down_payment_2_paid`
-- `members.password_hash`
+## Version 6.3 additions
+- Per-year Monthly Contribution setting (blank = member's existing monthly amount).
+- Down Payment 1 and 2 can each be Mandatory or Optional per year.
+- Each DP has a separate annual amount.
+- Admin marks each member's DP Paid/Unpaid with the same ✓/— style as monthly payments.
+- Mandatory unpaid DP is included in arrears; optional unpaid DP is not.
+- Paid optional/mandatory DP is included in paid totals.
+- Home/member pages show all-years Grand Total Paid and Grand Total Arrear.
+- Run `v6.3_supabase_migration.sql` once in Supabase SQL Editor before using the new settings.
 
-The old `members.monthly` column is retained for compatibility, but V6 yearly calculations use `annual_settings.monthly_amount`.
 
-## Member login
-Each active member needs an email and password. Admin can set or reset both the email and password from **Admin → Edit**. Until an email and password are saved for a member, that member cannot use Member Login. Passwords are stored as hashes, not plain text. Passwords are stored as hashes, not plain text.
-
-## Local run
-Keep your existing `.env` file with:
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SECRET_KEY`
-- `ADMIN_PASSWORD`
-
-Then:
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
-Do not put the Supabase service-role key in frontend files or GitHub.
+## Version 6.3.1 — Speed Optimized
+This version keeps the V6.3 features and calculation rules unchanged. It reduces Supabase round-trips by loading annual records and annual settings in bulk on Home, Member, and Admin pages. No `.env` file is included; keep the existing `.env` from your working installation private.

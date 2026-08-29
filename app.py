@@ -55,6 +55,7 @@ def years_all():
 
 
 def record_for(year, member_id):
+    """Fetch one record (used by write/update actions)."""
     rows = (supabase.table("annual_records").select("*")
             .eq("year", int(year)).eq("member_id", member_id).limit(1).execute().data or [])
     if rows:
@@ -62,18 +63,165 @@ def record_for(year, member_id):
         r.setdefault("payments", [False] * 12)
         r.setdefault("down_payment_1", 0)
         r.setdefault("down_payment_2", 0)
+        r.setdefault("down_payment_1_paid", False)
+        r.setdefault("down_payment_2_paid", False)
         return r
     return {"year": int(year), "member_id": member_id, "payments": [False] * 12,
-            "down_payment_1": 0, "down_payment_2": 0}
+            "down_payment_1": 0, "down_payment_2": 0,
+            "down_payment_1_paid": False, "down_payment_2_paid": False}
 
 
-def stats(rec, member):
-    pays = rec.get("payments") or [False] * 12
-    monthly = float(member.get("monthly") or 0)
-    paid = sum(bool(x) for x in pays) * monthly
-    arrear = (12 - sum(bool(x) for x in pays)) * monthly
-    down = float(rec.get("down_payment_1") or 0) + float(rec.get("down_payment_2") or 0)
+def records_for_year(year):
+    """Fetch all member records for one year in ONE database request."""
+    rows = (supabase.table("annual_records").select("*")
+            .eq("year", int(year)).execute().data or [])
+    result = {}
+    for r in rows:
+        r.setdefault("payments", [False] * 12)
+        r.setdefault("down_payment_1", 0)
+        r.setdefault("down_payment_2", 0)
+        r.setdefault("down_payment_1_paid", False)
+        r.setdefault("down_payment_2_paid", False)
+        result[int(r["member_id"])] = r
+    return result
+
+
+def records_for_years(years):
+    """Fetch all records for all supplied years in ONE database request."""
+    year_ints = [int(y) for y in years]
+    if not year_ints:
+        return {}
+    rows = (supabase.table("annual_records").select("*")
+            .in_("year", year_ints).execute().data or [])
+    result = {}
+    for r in rows:
+        r.setdefault("payments", [False] * 12)
+        r.setdefault("down_payment_1", 0)
+        r.setdefault("down_payment_2", 0)
+        r.setdefault("down_payment_1_paid", False)
+        r.setdefault("down_payment_2_paid", False)
+        result[(int(r["year"]), int(r["member_id"]))] = r
+    return result
+
+
+def annual_settings_all(years=None):
+    """Fetch yearly settings together instead of one query per year."""
+    rows = supabase.table("annual_settings").select("*").execute().data or []
+    wanted = None if years is None else {int(y) for y in years}
+    result = {}
+    for s in rows:
+        y = int(s["year"])
+        if wanted is None or y in wanted:
+            result[y] = {
+                "year": y,
+                "monthly_amount": s.get("monthly_amount"),
+                "down_payment_1_required": bool(s.get("down_payment_1_required", False)),
+                "down_payment_1_amount": float(s.get("down_payment_1_amount") or 0),
+                "down_payment_2_required": bool(s.get("down_payment_2_required", False)),
+                "down_payment_2_amount": float(s.get("down_payment_2_amount") or 0),
+            }
+    return result
+
+
+def default_annual_setting(year):
+    return {
+        "year": int(year),
+        "monthly_amount": None,
+        "down_payment_1_required": False,
+        "down_payment_1_amount": 0,
+        "down_payment_2_required": False,
+        "down_payment_2_amount": 0,
+    }
+
+
+def annual_setting(year):
+    """Return one year's settings. Used by write actions/fallback paths."""
+    default = default_annual_setting(year)
+    try:
+        rows = (supabase.table("annual_settings").select("*")
+                .eq("year", int(year)).limit(1).execute().data or [])
+        if rows:
+            s = rows[0]
+            default.update({
+                "monthly_amount": s.get("monthly_amount"),
+                "down_payment_1_required": bool(s.get("down_payment_1_required", False)),
+                "down_payment_1_amount": float(s.get("down_payment_1_amount") or 0),
+                "down_payment_2_required": bool(s.get("down_payment_2_required", False)),
+                "down_payment_2_amount": float(s.get("down_payment_2_amount") or 0),
+            })
+    except Exception:
+        pass
+    return default
+
+
+def stats(rec, member, setting=None):
+    setting = setting or annual_setting(rec["year"])
+    pays = list(rec.get("payments") or [False] * 12)
+    monthly_value = setting.get("monthly_amount")
+    monthly = float(member.get("monthly") or 0) if monthly_value in (None, "") else float(monthly_value or 0)
+    paid_months = sum(bool(x) for x in pays)
+    paid = paid_months * monthly
+    arrear = (12 - paid_months) * monthly
+
+    # New model: annual setting defines the obligation; record flags define
+    # whether each member actually paid it.
+    dp1_amount = float(setting.get("down_payment_1_amount") or 0)
+    dp2_amount = float(setting.get("down_payment_2_amount") or 0)
+    dp1_required = bool(setting.get("down_payment_1_required"))
+    dp2_required = bool(setting.get("down_payment_2_required"))
+    dp1_paid = bool(rec.get("down_payment_1_paid"))
+    dp2_paid = bool(rec.get("down_payment_2_paid"))
+
+    # Backward compatibility: old V6.2 records used amount fields directly.
+    # Treat a positive old amount as paid when no new paid flag exists.
+    if "down_payment_1_paid" not in rec and float(rec.get("down_payment_1") or 0) > 0:
+        dp1_paid = True
+    if "down_payment_2_paid" not in rec and float(rec.get("down_payment_2") or 0) > 0:
+        dp2_paid = True
+
+    dp1_paid_amount = dp1_amount if dp1_paid and dp1_amount > 0 else (
+        float(rec.get("down_payment_1") or 0) if dp1_paid and dp1_amount == 0 else 0
+    )
+    dp2_paid_amount = dp2_amount if dp2_paid and dp2_amount > 0 else (
+        float(rec.get("down_payment_2") or 0) if dp2_paid and dp2_amount == 0 else 0
+    )
+
+    # Optional DP can increase total paid if actually paid, but never creates arrear.
+    # Mandatory DP creates arrear until marked paid.
+    paid += dp1_paid_amount + dp2_paid_amount
+    if dp1_required and not dp1_paid:
+        arrear += dp1_amount
+    if dp2_required and not dp2_paid:
+        arrear += dp2_amount
+
+    down = dp1_paid_amount + dp2_paid_amount
     return paid, arrear, down
+
+
+def yearly_member_totals(member_id, member, years=None, records=None, settings=None):
+    """Calculate grand totals from already-fetched data when available."""
+    years = years if years is not None else years_all()
+    if records is None:
+        records = records_for_years(years)
+    if settings is None:
+        try:
+            settings = annual_settings_all(years)
+        except Exception:
+            settings = {}
+    total_paid = total_arrear = total_down = 0.0
+    for y in years:
+        yi = int(y)
+        r = records.get((yi, member_id), {
+            "year": yi, "member_id": member_id, "payments": [False] * 12,
+            "down_payment_1": 0, "down_payment_2": 0,
+            "down_payment_1_paid": False, "down_payment_2_paid": False
+        })
+        setting = settings.get(yi) or default_annual_setting(yi)
+        paid, arrear, down = stats(r, member, setting)
+        total_paid += paid
+        total_arrear += arrear
+        total_down += down
+    return total_paid, total_arrear, total_down
 
 
 def upload_photo(file, member_id):
@@ -94,24 +242,58 @@ def comments_for(member_id):
 
 
 def get_setting(key, default=""):
-    rows = (supabase.table("site_settings").select("value")
-            .eq("key", key).limit(1).execute().data or [])
-    return rows[0]["value"] if rows else default
+    if key not in ("member_email", "member_password_hash"):
+        return default
+    try:
+        rows = (supabase.table("site_settings")
+                .select(key)
+                .order("id", desc=True)
+                .limit(1)
+                .execute().data or [])
+        return rows[0].get(key, default) if rows else default
+    except Exception:
+        return default
 
 
 def set_setting(key, value):
-    existing = (supabase.table("site_settings").select("key")
-                .eq("key", key).limit(1).execute().data or [])
-    if existing:
-        supabase.table("site_settings").update({"value": value}).eq("key", key).execute()
+    if key not in ("member_email", "member_password_hash"):
+        return
+
+    rows = (supabase.table("site_settings")
+            .select("id")
+            .order("id", desc=True)
+            .limit(1)
+            .execute().data or [])
+
+    if rows:
+        supabase.table("site_settings").update({
+            key: value,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", rows[0]["id"]).execute()
     else:
-        supabase.table("site_settings").insert({"key": key, "value": value}).execute()
+        supabase.table("site_settings").insert({
+            key: value,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).execute()
 
 
 def member_credentials():
-    email = get_setting("member_email", MEMBER_EMAIL_DEFAULT).strip()
-    password_hash = get_setting("member_password_hash", "")
-    return email, password_hash
+    """Read both login settings with one request."""
+    try:
+        rows = (supabase.table("site_settings")
+                .select("member_email,member_password_hash")
+                .order("id", desc=True)
+                .limit(1)
+                .execute().data or [])
+        if rows:
+            row = rows[0]
+            return (
+                (row.get("member_email") or MEMBER_EMAIL_DEFAULT).strip(),
+                row.get("member_password_hash") or ""
+            )
+    except Exception:
+        pass
+    return MEMBER_EMAIL_DEFAULT.strip(), ""
 
 
 def member_required(fn):
@@ -132,17 +314,44 @@ def index():
     year = request.args.get("year", years[0])
     if year not in years:
         year = years[0]
+
+    # Performance: fetch members, all annual records and all annual settings
+    # in bulk instead of making a separate request for every member/year.
     active = [m for m in members_all() if m.get("active", True)]
+    all_records = records_for_years(years)
+    try:
+        settings = annual_settings_all(years)
+    except Exception:
+        settings = {}
+    setting = settings.get(int(year)) or annual_setting(year)
+    current_year = int(year)
+
     rows, total_paid, total_arrear, total_down = [], 0, 0, 0
+    grand_total_paid = grand_total_arrear = grand_total_down = 0
     for m in active:
-        r = record_for(year, m["id"])
-        paid, arrear, down = stats(r, m)
-        rows.append((m, r, paid, arrear, down))
-        total_paid += paid; total_arrear += arrear; total_down += down
+        r = all_records.get((current_year, int(m["id"])), {
+            "year": current_year, "member_id": m["id"], "payments": [False] * 12,
+            "down_payment_1": 0, "down_payment_2": 0,
+            "down_payment_1_paid": False, "down_payment_2_paid": False
+        })
+        paid, arrear, down = stats(r, m, setting)
+        grand_paid, grand_arrear, grand_down = yearly_member_totals(
+            m["id"], m, years=years, records=all_records, settings=settings
+        )
+        rows.append((m, r, paid, arrear, down, grand_paid, grand_arrear, grand_down))
+        total_paid += paid
+        total_arrear += arrear
+        total_down += down
+        grand_total_paid += grand_paid
+        grand_total_arrear += grand_arrear
+        grand_total_down += grand_down
+
     notices = (supabase.table("notices").select("*")
                .order("pinned", desc=True).order("created_at", desc=True).execute().data or [])
     return render_template("index.html", members=rows, years=years, year=year, months=MONTHS,
                            total_paid=total_paid, total_arrear=total_arrear, total_down=total_down,
+                           grand_total_paid=grand_total_paid, grand_total_arrear=grand_total_arrear,
+                           grand_total_down=grand_total_down, setting=setting,
                            admin=session.get("admin", False), notices=notices)
 
 
@@ -150,15 +359,36 @@ def index():
 @member_required
 def member(member_id):
     m = member_by_id(member_id)
-    if not m: abort(404)
+    if not m:
+        abort(404)
     years = years_all()
+    if not years:
+        abort(500, "No years found in database.")
     year = request.args.get("year", years[0])
-    if year not in years: year = years[0]
-    r = record_for(year, member_id)
-    paid, arrear, down = stats(r, m)
+    if year not in years:
+        year = years[0]
+
+    # One bulk request gets this member's records for every year.
+    all_records = records_for_years(years)
+    try:
+        settings = annual_settings_all(years)
+    except Exception:
+        settings = {}
+    yi = int(year)
+    r = all_records.get((yi, member_id), {
+        "year": yi, "member_id": member_id, "payments": [False] * 12,
+        "down_payment_1": 0, "down_payment_2": 0,
+        "down_payment_1_paid": False, "down_payment_2_paid": False
+    })
+    setting = settings.get(yi) or annual_setting(year)
+    paid, arrear, down = stats(r, m, setting)
+    grand_paid, grand_arrear, grand_down = yearly_member_totals(
+        member_id, m, years=years, records=all_records, settings=settings
+    )
     return render_template("member.html", member=m, record=r, months=MONTHS, years=years,
                            year=year, paid=paid, arrear=arrear, down=down,
-                           admin=session.get("admin", False), comments=comments_for(member_id))
+                           grand_paid=grand_paid, grand_arrear=grand_arrear, grand_down=grand_down,
+                           setting=setting, admin=session.get("admin", False), comments=comments_for(member_id))
 
 
 @app.route("/member/<int:member_id>/comment", methods=["POST"])
@@ -235,17 +465,35 @@ def update_member_login_settings():
 @admin_required
 def admin():
     years = years_all()
+    if not years:
+        abort(500, "No years found in database.")
     year = request.args.get("year", years[0])
-    if year not in years: year = years[0]
+    if year not in years:
+        year = years[0]
+
+    members = members_all()
+    current_records = records_for_year(year)
+    try:
+        settings = annual_settings_all(years)
+    except Exception:
+        settings = {}
+    setting = settings.get(int(year)) or annual_setting(year)
+
     rows = []
-    for m in members_all():
-        r = record_for(year, m["id"])
-        paid, arrear, down = stats(r, m)
+    yi = int(year)
+    for m in members:
+        r = current_records.get((int(m["id"])), {
+            "year": yi, "member_id": m["id"], "payments": [False] * 12,
+            "down_payment_1": 0, "down_payment_2": 0,
+            "down_payment_1_paid": False, "down_payment_2_paid": False
+        })
+        paid, arrear, down = stats(r, m, setting)
         rows.append((m, r, paid, arrear, down))
+
     notices = supabase.table("notices").select("*").order("created_at", desc=True).execute().data or []
     member_email, _ = member_credentials()
     return render_template("admin.html", members=rows, years=years, year=year, months=MONTHS,
-                           notices=notices, member_email=member_email)
+                           notices=notices, member_email=member_email, setting=setting)
 
 
 @app.route("/admin/add-year", methods=["POST"])
@@ -260,7 +508,17 @@ def add_year():
     ms = members_all()
     for m in ms:
         supabase.table("annual_records").insert({"year": int(y), "member_id": m["id"],
-            "payments": [False] * 12, "down_payment_1": 0, "down_payment_2": 0}).execute()
+            "payments": [False] * 12, "down_payment_1": 0, "down_payment_2": 0,
+            "down_payment_1_paid": False, "down_payment_2_paid": False}).execute()
+    # New annual settings are optional; the migration will create the table.
+    try:
+        supabase.table("annual_settings").insert({
+            "year": int(y), "monthly_amount": None,
+            "down_payment_1_required": False, "down_payment_1_amount": 0,
+            "down_payment_2_required": False, "down_payment_2_amount": 0
+        }).execute()
+    except Exception:
+        pass
     flash(f"{y} সালের হিসাব যোগ হয়েছে।", "ok")
     return redirect(url_for("admin", year=y))
 
@@ -282,11 +540,64 @@ def toggle(member_id, month_idx):
 @admin_required
 def down_payment(member_id, slot):
     year = request.form.get("year")
-    if year not in years_all() or slot not in (0, 1): abort(400)
-    try: amount = float(request.form.get("amount", "0") or 0)
-    except ValueError: amount = 0
-    field = "down_payment_1" if slot == 0 else "down_payment_2"
-    supabase.table("annual_records").update({field: max(0, amount), "updated_at": datetime.now(timezone.utc).isoformat()}).eq("year", int(year)).eq("member_id", member_id).execute()
+    if year not in years_all() or slot not in (0, 1):
+        abort(400)
+    field = "down_payment_1_paid" if slot == 0 else "down_payment_2_paid"
+    r = record_for(year, member_id)
+    new_value = not bool(r.get(field, False))
+    try:
+        supabase.table("annual_records").update({
+            field: new_value,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("year", int(year)).eq("member_id", member_id).execute()
+    except Exception:
+        # If migration is not yet installed, do not destroy old V6.2 data.
+        flash("Down Payment নতুন ব্যবস্থা চালু করতে Supabase migration SQL আগে Run করুন।", "error")
+    return redirect(url_for("admin", year=year))
+
+
+@app.route("/admin/year-settings", methods=["POST"])
+@admin_required
+def update_year_settings():
+    year = request.form.get("year", "")
+    if year not in years_all():
+        abort(400)
+
+    try:
+        monthly_raw = (request.form.get("monthly_amount") or "").strip()
+        monthly_amount = None if monthly_raw == "" else max(0, float(monthly_raw))
+        dp1_required = request.form.get("down_payment_1_required") == "1"
+        dp2_required = request.form.get("down_payment_2_required") == "1"
+        dp1_amount = max(0, float(request.form.get("down_payment_1_amount", "0") or 0))
+        dp2_amount = max(0, float(request.form.get("down_payment_2_amount", "0") or 0))
+
+        if dp1_required and dp1_amount <= 0:
+            flash("Down Payment 1 Mandatory হলে Amount অবশ্যই 0-এর বেশি হতে হবে।", "error")
+            return redirect(url_for("admin", year=year))
+        if dp2_required and dp2_amount <= 0:
+            flash("Down Payment 2 Mandatory হলে Amount অবশ্যই 0-এর বেশি হতে হবে।", "error")
+            return redirect(url_for("admin", year=year))
+
+        payload = {
+            "year": int(year),
+            "monthly_amount": monthly_amount,
+            "down_payment_1_required": dp1_required,
+            "down_payment_1_amount": dp1_amount,
+            "down_payment_2_required": dp2_required,
+            "down_payment_2_amount": dp2_amount,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        try:
+            existing = supabase.table("annual_settings").select("year").eq("year", int(year)).limit(1).execute().data or []
+            if existing:
+                supabase.table("annual_settings").update(payload).eq("year", int(year)).execute()
+            else:
+                supabase.table("annual_settings").insert(payload).execute()
+            flash(f"{year} সালের Year Settings সংরক্ষণ হয়েছে।", "ok")
+        except Exception:
+            flash("Year Settings সংরক্ষণ হয়নি। আগে v6.3_supabase_migration.sql Supabase-এ Run করুন।", "error")
+    except ValueError:
+        flash("Amount-এর ঘরে সঠিক সংখ্যা দিন।", "error")
     return redirect(url_for("admin", year=year))
 
 
@@ -325,7 +636,8 @@ def add_member():
     if photo: supabase.table("members").update({"photo": photo}).eq("id", new_id).execute()
     for y in years_all():
         supabase.table("annual_records").insert({"year": int(y), "member_id": new_id, "payments": [False]*12,
-            "down_payment_1": 0, "down_payment_2": 0}).execute()
+            "down_payment_1": 0, "down_payment_2": 0,
+            "down_payment_1_paid": False, "down_payment_2_paid": False}).execute()
     flash("নতুন সদস্য যোগ হয়েছে।", "ok")
     return redirect(url_for("admin"))
 
