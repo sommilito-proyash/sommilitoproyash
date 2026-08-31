@@ -119,6 +119,7 @@ def annual_settings_all(years=None):
                 "down_payment_1_amount": float(s.get("down_payment_1_amount") or 0),
                 "down_payment_2_required": bool(s.get("down_payment_2_required", False)),
                 "down_payment_2_amount": float(s.get("down_payment_2_amount") or 0),
+                "mandatory_months": list(s.get("mandatory_months") or [True] * 12),
             }
     return result
 
@@ -131,6 +132,7 @@ def default_annual_setting(year):
         "down_payment_1_amount": 0,
         "down_payment_2_required": False,
         "down_payment_2_amount": 0,
+        "mandatory_months": [True] * 12,
     }
 
 
@@ -148,23 +150,41 @@ def annual_setting(year):
                 "down_payment_1_amount": float(s.get("down_payment_1_amount") or 0),
                 "down_payment_2_required": bool(s.get("down_payment_2_required", False)),
                 "down_payment_2_amount": float(s.get("down_payment_2_amount") or 0),
+                "mandatory_months": list(s.get("mandatory_months") or [True] * 12),
             })
     except Exception:
         pass
     return default
 
 
+def year_summary(year, members, records, setting):
+    total_paid = total_arrear = total_down = 0.0
+    yi = int(year)
+    for m in members:
+        r = records.get((yi, int(m["id"])), {"year": yi, "member_id": m["id"], "payments": [False] * 12, "down_payment_1": 0, "down_payment_2": 0, "down_payment_1_paid": False, "down_payment_2_paid": False})
+        paid, arrear, down = stats(r, m, setting)
+        total_paid += paid; total_arrear += arrear; total_down += down
+    return total_paid, total_arrear, total_down
+
+
 def stats(rec, member, setting=None):
     setting = setting or annual_setting(rec["year"])
     pays = list(rec.get("payments") or [False] * 12)
+    pays = (pays + [False] * 12)[:12]
     monthly_value = setting.get("monthly_amount")
     monthly = float(member.get("monthly") or 0) if monthly_value in (None, "") else float(monthly_value or 0)
-    paid_months = sum(bool(x) for x in pays)
-    paid = paid_months * monthly
-    arrear = (12 - paid_months) * monthly
 
-    # New model: annual setting defines the obligation; record flags define
-    # whether each member actually paid it.
+    mandatory = list(setting.get("mandatory_months") or [True] * 12)
+    mandatory = [(bool(x) if i < len(mandatory) else True) for i, x in enumerate((mandatory + [True] * 12)[:12])]
+    mandatory_count = sum(mandatory)
+    paid_mandatory_months = sum(bool(pays[i]) and mandatory[i] for i in range(12))
+    paid_optional_months = sum(bool(pays[i]) and not mandatory[i] for i in range(12))
+
+    # Every actual payment counts as deposited, including optional/advance months.
+    paid = sum(bool(x) for x in pays) * monthly
+    # Only unpaid Mandatory months create arrears. Optional unpaid months never do.
+    arrear = (mandatory_count - paid_mandatory_months) * monthly
+
     dp1_amount = float(setting.get("down_payment_1_amount") or 0)
     dp2_amount = float(setting.get("down_payment_2_amount") or 0)
     dp1_required = bool(setting.get("down_payment_1_required"))
@@ -172,22 +192,13 @@ def stats(rec, member, setting=None):
     dp1_paid = bool(rec.get("down_payment_1_paid"))
     dp2_paid = bool(rec.get("down_payment_2_paid"))
 
-    # Backward compatibility: old V6.2 records used amount fields directly.
-    # Treat a positive old amount as paid when no new paid flag exists.
     if "down_payment_1_paid" not in rec and float(rec.get("down_payment_1") or 0) > 0:
         dp1_paid = True
     if "down_payment_2_paid" not in rec and float(rec.get("down_payment_2") or 0) > 0:
         dp2_paid = True
 
-    dp1_paid_amount = dp1_amount if dp1_paid and dp1_amount > 0 else (
-        float(rec.get("down_payment_1") or 0) if dp1_paid and dp1_amount == 0 else 0
-    )
-    dp2_paid_amount = dp2_amount if dp2_paid and dp2_amount > 0 else (
-        float(rec.get("down_payment_2") or 0) if dp2_paid and dp2_amount == 0 else 0
-    )
-
-    # Optional DP can increase total paid if actually paid, but never creates arrear.
-    # Mandatory DP creates arrear until marked paid.
+    dp1_paid_amount = dp1_amount if dp1_paid and dp1_amount > 0 else (float(rec.get("down_payment_1") or 0) if dp1_paid else 0)
+    dp2_paid_amount = dp2_amount if dp2_paid and dp2_amount > 0 else (float(rec.get("down_payment_2") or 0) if dp2_paid else 0)
     paid += dp1_paid_amount + dp2_paid_amount
     if dp1_required and not dp1_paid:
         arrear += dp1_amount
@@ -346,12 +357,18 @@ def index():
         grand_total_arrear += grand_arrear
         grand_total_down += grand_down
 
+    year_summaries = []
+    for y in years:
+        ys = settings.get(int(y)) or default_annual_setting(y)
+        yp, ya, yd = year_summary(y, active, all_records, ys)
+        year_summaries.append({"year": int(y), "paid": yp, "arrear": ya, "down": yd})
+
     notices = (supabase.table("notices").select("*")
                .order("pinned", desc=True).order("created_at", desc=True).execute().data or [])
     return render_template("index.html", members=rows, years=years, year=year, months=MONTHS,
                            total_paid=total_paid, total_arrear=total_arrear, total_down=total_down,
                            grand_total_paid=grand_total_paid, grand_total_arrear=grand_total_arrear,
-                           grand_total_down=grand_total_down, setting=setting,
+                           grand_total_down=grand_total_down, year_summaries=year_summaries, setting=setting,
                            admin=session.get("admin", False), notices=notices)
 
 
@@ -515,7 +532,8 @@ def add_year():
         supabase.table("annual_settings").insert({
             "year": int(y), "monthly_amount": None,
             "down_payment_1_required": False, "down_payment_1_amount": 0,
-            "down_payment_2_required": False, "down_payment_2_amount": 0
+            "down_payment_2_required": False, "down_payment_2_amount": 0,
+            "mandatory_months": [True] * 12
         }).execute()
     except Exception:
         pass
@@ -570,6 +588,7 @@ def update_year_settings():
         dp2_required = request.form.get("down_payment_2_required") == "1"
         dp1_amount = max(0, float(request.form.get("down_payment_1_amount", "0") or 0))
         dp2_amount = max(0, float(request.form.get("down_payment_2_amount", "0") or 0))
+        mandatory_months = [request.form.get(f"mandatory_month_{i}") == "1" for i in range(12)]
 
         if dp1_required and dp1_amount <= 0:
             flash("Down Payment 1 Mandatory হলে Amount অবশ্যই 0-এর বেশি হতে হবে।", "error")
@@ -585,6 +604,7 @@ def update_year_settings():
             "down_payment_1_amount": dp1_amount,
             "down_payment_2_required": dp2_required,
             "down_payment_2_amount": dp2_amount,
+            "mandatory_months": mandatory_months,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
         try:
@@ -610,7 +630,9 @@ def edit_member(member_id):
         try: monthly = float(request.form.get("monthly", "1000") or 0)
         except ValueError: monthly = 1000
         updates = {"name": request.form.get("name", "").strip(), "phone": request.form.get("phone", "").strip(),
-                   "address": request.form.get("address", "").strip(), "monthly": max(0, monthly)}
+                   "address": request.form.get("address", "").strip(), "monthly": max(0, monthly),
+                   "blood_group": request.form.get("blood_group", "").strip(),
+                   "personal_email": request.form.get("personal_email", "").strip()}
         photo = upload_photo(request.files.get("photo"), member_id)
         if photo: updates["photo"] = photo
         supabase.table("members").update(updates).eq("id", member_id).execute()
@@ -630,7 +652,8 @@ def add_member():
     try: monthly = float(request.form.get("monthly", "1000") or 1000)
     except ValueError: monthly = 1000
     row = {"id": new_id, "name": name, "monthly": max(0, monthly), "phone": request.form.get("phone", "").strip(),
-           "address": request.form.get("address", "").strip(), "photo": "", "active": True}
+           "address": request.form.get("address", "").strip(), "blood_group": request.form.get("blood_group", "").strip(),
+           "personal_email": request.form.get("personal_email", "").strip(), "photo": "", "active": True}
     supabase.table("members").insert(row).execute()
     photo = upload_photo(request.files.get("photo"), new_id)
     if photo: supabase.table("members").update({"photo": photo}).eq("id", new_id).execute()
