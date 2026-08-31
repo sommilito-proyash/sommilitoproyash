@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 160" role="img" aria-label="সম্মিলিত প্রয়াস">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#0f766e"/></linearGradient>
+  </defs>
+  <rect x="4" y="4" width="152" height="152" rx="38" fill="url(#g)"/>
+  <circle cx="80" cy="62" r="28" fill="none" stroke="#fff" stroke-width="9"/>
+  <path d="M38 116c10-25 27-36 42-36s32 11 42 36" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+  <path d="M80 20v16M80 88v20M38 62h16M106 62h16" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+  <text x="182" y="72" font-family="Noto Sans Bengali, Arial, sans-serif" font-size="45" font-weight="700" fill="#0f172a">সম্মিলিত প্রয়াস</text>
+  <text x="184" y="112" font-family="Arial, sans-serif" font-size="19" fill="#475569" letter-spacing="2">TOGETHER • PROGRESS • TRUST</text>
+</svg>
