@@ -5,7 +5,7 @@ body{margin:0;font-family:Arial,'Noto Sans Bengali',sans-serif;background:#f5f8f
 header{
   background:linear-gradient(135deg,#1d4ed8,#0f766e);
   color:#fff;
-  padding:12px 5%;
+  padding:10px 2%;
   display:flex;
   justify-content:space-between;
   align-items:center;
@@ -17,10 +17,16 @@ header{
   z-index:20
 }
 
-.brand{display:block}
+.brand{
+  display:block;
+  flex:1 1 auto;
+  min-width:0
+}
+
 .brand img{
-  width:min(290px,70vw);
-  height:70px;
+  width:min(520px,100%);
+  height:auto;
+  max-height:100px;
   display:block;
   background:#fff;
   border-radius:12px;
@@ -28,7 +34,13 @@ header{
   object-fit:contain
 }
 
-nav{display:flex;gap:8px;flex-wrap:wrap}
+nav{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  flex:0 0 auto
+}
+
 nav a,.button,button{
   border:0;
   border-radius:9px;
@@ -38,14 +50,20 @@ nav a,.button,button{
   font-weight:700;
   transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease
 }
+
 nav a,.button{background:#fff;color:#1d4ed8}
 button{background:#2563eb;color:#fff}
+
 nav a:hover,.button:hover,button:hover{
   transform:translateY(-1px);
   box-shadow:0 5px 14px rgba(15,23,42,.12)
 }
 
-main{max-width:1250px;margin:22px auto;padding:0 14px}
+main{
+  max-width:1250px;
+  margin:22px auto;
+  padding:0 14px
+}
 
 .panel,.summary-section{
   background:#fff;
@@ -56,17 +74,26 @@ main{max-width:1250px;margin:22px auto;padding:0 14px}
   border:1px solid #e5eaf2
 }
 
-.section-title,.notice-head{display:flex;align-items:center;gap:9px}
+.section-title,.notice-head{
+  display:flex;
+  align-items:center;
+  gap:9px
+}
+
 .section-title h2,.notice-head h2{margin:0}
 
-.grand-summary{background:linear-gradient(135deg,#eff6ff,#ecfeff)}
+.grand-summary{
+  background:linear-gradient(135deg,#eff6ff,#ecfeff)
+}
 
 .cards{
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:12px
 }
+
 .cards.two{grid-template-columns:repeat(2,1fr)}
+
 .cards>div{
   background:#fff;
   border-radius:13px;
@@ -75,14 +102,24 @@ main{max-width:1250px;margin:22px auto;padding:0 14px}
   box-shadow:0 3px 12px rgba(15,23,42,.05);
   border:1px solid #edf1f7
 }
-.cards b{display:block;font-size:1.35rem}
-.cards span{display:block;margin-top:5px;color:#64748b}
+
+.cards b{
+  display:block;
+  font-size:1.35rem
+}
+
+.cards span{
+  display:block;
+  margin-top:5px;
+  color:#64748b
+}
 
 .year-summary-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
   gap:12px
 }
+
 .year-summary{
   display:block;
   color:inherit;
@@ -93,14 +130,25 @@ main{max-width:1250px;margin:22px auto;padding:0 14px}
   padding:15px;
   transition:.18s ease
 }
+
 .year-summary:hover,.year-summary.selected{
   transform:translateY(-2px);
   box-shadow:0 7px 18px rgba(15,23,42,.08);
   border-color:#60a5fa;
   background:#eff6ff
 }
-.year-summary h3{margin:0 0 10px;color:#1d4ed8}
-.year-summary h3 small{font-size:.72rem;color:#64748b;font-weight:600}
+
+.year-summary h3{
+  margin:0 0 10px;
+  color:#1d4ed8
+}
+
+.year-summary h3 small{
+  font-size:.72rem;
+  color:#64748b;
+  font-weight:600
+}
+
 .year-summary div{
   display:flex;
   justify-content:space-between;
@@ -108,6 +156,7 @@ main{max-width:1250px;margin:22px auto;padding:0 14px}
   padding:5px 0;
   border-top:1px solid #e5e7eb
 }
+
 .year-summary span{color:#64748b}
 .year-summary strong{font-size:1.05rem}
 
@@ -118,6 +167,7 @@ main{max-width:1250px;margin:22px auto;padding:0 14px}
   align-items:center;
   margin:12px 0
 }
+
 .year{
   padding:7px 11px;
   background:#e2e8f0;
@@ -125,7 +175,11 @@ main{max-width:1250px;margin:22px auto;padding:0 14px}
   text-decoration:none;
   color:#334155
 }
-.year.active{background:#2563eb;color:#fff}
+
+.year.active{
+  background:#2563eb;
+  color:#fff
+}
 
 /* Member List table */
 .table-wrap{
@@ -171,8 +225,15 @@ th{
   margin-right:6px
 }
 
-.paid{background:#dcfce7;color:#166534}
-.due{background:#fee2e2;color:#991b1b}
+.paid{
+  background:#dcfce7;
+  color:#166534
+}
+
+.due{
+  background:#fee2e2;
+  color:#991b1b
+}
 
 .toggle{padding:6px 9px}
 
@@ -184,7 +245,11 @@ th{
   box-shadow:0 4px 16px rgba(15,23,42,.05)
 }
 
-.notice{padding:12px;border-bottom:1px solid #fed7aa}
+.notice{
+  padding:12px;
+  border-bottom:1px solid #fed7aa
+}
+
 .notice:last-child{border-bottom:0}
 .notice-title{font-weight:700}
 .notice small,.comment small{color:#64748b}
@@ -205,9 +270,22 @@ th{
   margin-bottom:12px
 }
 
-.login{max-width:480px;margin:45px auto}
-.login-panel{text-align:center;padding:25px}
-.login-logo{width:min(420px,100%);height:auto;margin:0 auto 10px}
+.login{
+  max-width:480px;
+  margin:45px auto
+}
+
+.login-panel{
+  text-align:center;
+  padding:25px
+}
+
+.login-logo{
+  width:min(420px,100%);
+  height:auto;
+  margin:0 auto 10px
+}
+
 .login form{text-align:left}
 
 .login input,.add-member-form input,.add-member-form textarea,
@@ -220,34 +298,54 @@ th{
   background:#fff
 }
 
-.add-member-form{display:grid;gap:4px}
+.add-member-form{
+  display:grid;
+  gap:4px
+}
 
 .smallform{
   display:flex;
   gap:5px;
   align-items:center
 }
+
 .smallform input{
   margin:0;
   min-width:90px
 }
 
-.danger{background:#dc2626;color:#fff}
-.success{background:#16a34a;color:#fff}
-.secondary{background:#475569}
-.small{padding:7px 10px;font-size:.9rem}
+.danger{
+  background:#dc2626;
+  color:#fff
+}
+
+.success{
+  background:#16a34a;
+  color:#fff
+}
+
+.secondary{
+  background:#475569
+}
+
+.small{
+  padding:7px 10px;
+  font-size:.9rem
+}
 
 .profile{
   display:flex;
   gap:20px;
   align-items:center
 }
+
 .profilephoto{
   width:130px;
   height:130px;
   border-radius:16px;
   object-fit:cover
 }
+
 .avatar{
   width:130px;
   height:130px;
@@ -258,6 +356,7 @@ th{
   justify-content:center;
   font-size:2rem
 }
+
 .profile-info p{margin:4px 0}
 
 .months{
@@ -272,9 +371,21 @@ th{
   text-align:center;
   border:1px solid transparent
 }
-.paidbox{background:#dcfce7;border-color:#bbf7d0}
-.duebox{background:#fee2e2;border-color:#fecaca}
-.optionalbox{background:#f1f5f9;border-color:#e2e8f0}
+
+.paidbox{
+  background:#dcfce7;
+  border-color:#bbf7d0
+}
+
+.duebox{
+  background:#fee2e2;
+  border-color:#fecaca
+}
+
+.optionalbox{
+  background:#f1f5f9;
+  border-color:#e2e8f0
+}
 
 .paidbox b,.duebox b,.optionalbox b,
 .paidbox span,.duebox span,.optionalbox span,
@@ -283,10 +394,12 @@ th{
 }
 
 .comments{margin-top:15px}
+
 .comment{
   padding:12px;
   border-bottom:1px solid #e5e7eb
 }
+
 .smallbtn{padding:6px 9px}
 .note{color:#64748b}
 .inactive-row{opacity:.65}
@@ -312,12 +425,14 @@ th{
   grid-template-columns:repeat(4,1fr);
   gap:8px
 }
+
 .month-checks label{
   background:#fff;
   border:1px solid #e2e8f0;
   border-radius:8px;
   padding:8px
 }
+
 .month-checks input{
   width:auto;
   margin:0 7px 0 0
@@ -330,6 +445,7 @@ th{
   border-top:1px solid #e5e7eb;
   padding:10px 0
 }
+
 .admin-notice small{
   display:block;
   color:#64748b
@@ -337,7 +453,8 @@ th{
 
 @media(max-width:800px){
   header{
-    position:static
+    position:static;
+    padding:10px 2%;
   }
 
   .cards{
@@ -358,7 +475,13 @@ th{
   }
 
   .brand img{
-    height:58px
+    width:min(500px,100%);
+    height:auto;
+    max-height:85px
+  }
+
+  nav{
+    width:100%;
   }
 
   .login{
@@ -388,101 +511,13 @@ th{
   }
 
   .brand img{
-    width:240px;
-    height:52px
-  }
-}
-/* Version 6.4 - Full Width Header */
-header {
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    padding: 18px 20px;
-    box-sizing: border-box;
-}
-
-header .logo,
-header img {
-    max-height: 85px;
-    width: auto;
-}
-
-header h1,
-header .site-title {
-    font-size: 32px;
-    font-weight: 700;
-    margin: 0;
-}
-
-@media (max-width: 600px) {
-    header {
-        padding: 14px 10px;
-    }
-
-    header .logo,
-    header img {
-        max-height: 65px;
-    }
-
-    header h1,
-    header .site-title {
-        font-size: 24px;
-    }/* Version 6.4 - Prominent Full Header */
-header{
-  width:100%;
-  padding:10px 2%;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:20px;
-}
-
-.brand{
-  display:block;
-  flex:1 1 auto;
-  min-width:0;
-}
-
-.brand img{
-  display:block;
-  width:100%;
-  max-width:650px;
-  height:auto;
-  max-height:130px;
-  object-fit:contain;
-  object-position:left center;
-}
-
-nav{
-  flex:0 0 auto;
-}
-
-@media(max-width:800px){
-  header{
-    padding:8px 2%;
-    gap:10px;
-  }
-
-  .brand img{
-    max-width:500px;
-    max-height:100px;
-  }
-}
-
-@media(max-width:480px){
-  header{
-    padding:6px 2%;
-  }
-
-  .brand img{
     width:100%;
     max-width:100%;
-    max-height:80px;
+    height:auto;
+    max-height:75px
   }
 
   nav{
     width:100%;
   }
 }
-}
-
