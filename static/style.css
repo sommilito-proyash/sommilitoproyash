@@ -392,3 +392,40 @@ th{
     height:52px
   }
 }
+/* Version 6.4 - Full Width Header */
+header {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 18px 20px;
+    box-sizing: border-box;
+}
+
+header .logo,
+header img {
+    max-height: 85px;
+    width: auto;
+}
+
+header h1,
+header .site-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    header {
+        padding: 14px 10px;
+    }
+
+    header .logo,
+    header img {
+        max-height: 65px;
+    }
+
+    header h1,
+    header .site-title {
+        font-size: 24px;
+    }
+}
