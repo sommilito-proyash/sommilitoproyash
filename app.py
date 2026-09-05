@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, abort, flash
+from flask import Flask, render_template, request, redirect, url_for, session, abort, flash, Response, send_file
 from functools import wraps
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -6,6 +6,9 @@ from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timezone
+import csv
+import io
+import json
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
@@ -362,13 +365,14 @@ def index():
         ys = settings.get(int(y)) or default_annual_setting(y)
         yp, ya, yd = year_summary(y, active, all_records, ys)
         year_summaries.append({"year": int(y), "paid": yp, "arrear": ya, "down": yd})
+    max_chart = max([max(float(x["paid"]), float(x["arrear"])) for x in year_summaries] or [1])
 
     notices = (supabase.table("notices").select("*")
                .order("pinned", desc=True).order("created_at", desc=True).execute().data or [])
     return render_template("index.html", members=rows, years=years, year=year, months=MONTHS,
                            total_paid=total_paid, total_arrear=total_arrear, total_down=total_down,
                            grand_total_paid=grand_total_paid, grand_total_arrear=grand_total_arrear,
-                           grand_total_down=grand_total_down, year_summaries=year_summaries, setting=setting,
+                           grand_total_down=grand_total_down, year_summaries=year_summaries, max_chart=max_chart, setting=setting,
                            admin=session.get("admin", False), notices=notices)
 
 
@@ -499,7 +503,7 @@ def admin():
     rows = []
     yi = int(year)
     for m in members:
-        r = current_records.get((int(m["id"])), {
+        r = current_records.get(int(m["id"]), {
             "year": yi, "member_id": m["id"], "payments": [False] * 12,
             "down_payment_1": 0, "down_payment_2": 0,
             "down_payment_1_paid": False, "down_payment_2_paid": False
@@ -509,8 +513,143 @@ def admin():
 
     notices = supabase.table("notices").select("*").order("created_at", desc=True).execute().data or []
     member_email, _ = member_credentials()
+
+    # Dashboard totals and year comparison chart data.
+    active_members = [m for m in members if m.get("active", True)]
+    all_records = records_for_years(years)
+    year_summaries = []
+    for y in years:
+        ys = settings.get(int(y)) or default_annual_setting(y)
+        yp, ya, yd = year_summary(y, active_members, all_records, ys)
+        year_summaries.append({"year": int(y), "paid": yp, "arrear": ya, "down": yd})
+
+    # Monthly collection report for the selected year/month.
+    try:
+        month_idx = int(request.args.get("month", "0"))
+    except ValueError:
+        month_idx = 0
+    month_idx = max(0, min(11, month_idx))
+    monthly_rows = []
+    monthly_collected = monthly_due = 0.0
+    monthly_paid_count = 0
+    monthly_due_count = 0
+    for m in active_members:
+        r = current_records.get(int(m["id"]), {"payments": [False] * 12})
+        pays = list(r.get("payments") or [False] * 12)
+        is_paid = bool(pays[month_idx]) if month_idx < len(pays) else False
+        monthly_value = setting.get("monthly_amount")
+        amount = float(m.get("monthly") or 0) if monthly_value in (None, "") else float(monthly_value or 0)
+        mandatory = bool((setting.get("mandatory_months") or [True] * 12)[month_idx])
+        if is_paid:
+            monthly_collected += amount
+            monthly_paid_count += 1
+        elif mandatory:
+            monthly_due += amount
+            monthly_due_count += 1
+        monthly_rows.append({"member": m, "paid": is_paid, "mandatory": mandatory, "amount": amount})
+
+    current_summary = next((x for x in year_summaries if x["year"] == yi), {"paid": 0, "arrear": 0, "down": 0})
+    max_chart = max([max(float(x["paid"]), float(x["arrear"])) for x in year_summaries] or [1])
     return render_template("admin.html", members=rows, years=years, year=year, months=MONTHS,
-                           notices=notices, member_email=member_email, setting=setting)
+                           notices=notices, member_email=member_email, setting=setting,
+                           year_summaries=year_summaries, max_chart=max_chart,
+                           current_paid=current_summary["paid"], current_arrear=current_summary["arrear"], current_down=current_summary["down"],
+                           monthly_rows=monthly_rows, selected_month=month_idx,
+                           monthly_collected=monthly_collected, monthly_due=monthly_due,
+                           monthly_paid_count=monthly_paid_count, monthly_due_count=monthly_due_count,
+                           active_member_count=len(active_members))
+
+
+@app.route("/admin/report/csv")
+@admin_required
+def download_report_csv():
+    years = years_all()
+    year = request.args.get("year", years[0] if years else "")
+    if year not in years:
+        abort(400)
+    members = [m for m in members_all() if m.get("active", True)]
+    records = records_for_year(year)
+    setting = annual_setting(year)
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["Member", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "Year Deposit", "Year Arrear", "Down Payment Paid"])
+    for m in members:
+        r = records.get(int(m["id"]), {"payments": [False]*12, "down_payment_1_paid": False, "down_payment_2_paid": False})
+        paid, arrear, down = stats(r, m, setting)
+        pays = list(r.get("payments") or [False]*12)
+        pays = (pays + [False]*12)[:12]
+        writer.writerow([m.get("name", "")] + ["Paid" if x else "Unpaid" for x in pays] + [round(paid,2), round(arrear,2), round(down,2)])
+    data = out.getvalue().encode("utf-8-sig")
+    return Response(data, mimetype="text/csv; charset=utf-8", headers={"Content-Disposition": f"attachment; filename=sommilitoproyash-{year}-report.csv"})
+
+
+@app.route("/admin/report/print")
+@admin_required
+def print_report():
+    years = years_all()
+    year = request.args.get("year", years[0] if years else "")
+    if year not in years:
+        abort(400)
+    members = [m for m in members_all() if m.get("active", True)]
+    records = records_for_year(year)
+    setting = annual_setting(year)
+    report_rows = []
+    total_paid = total_arrear = total_down = 0.0
+    for m in members:
+        r = records.get(int(m["id"]), {"payments": [False]*12, "down_payment_1_paid": False, "down_payment_2_paid": False})
+        paid, arrear, down = stats(r, m, setting)
+        total_paid += paid; total_arrear += arrear; total_down += down
+        report_rows.append((m, r, paid, arrear, down))
+    return render_template("report.html", year=year, months=MONTHS, rows=report_rows,
+                           total_paid=total_paid, total_arrear=total_arrear, total_down=total_down)
+
+
+@app.route("/admin/backup")
+@admin_required
+def backup_data():
+    # Export application data without exposing login password hashes/secrets.
+    payload = {
+        "backup_version": "6.5",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "members": supabase.table("members").select("*").execute().data or [],
+        "years": supabase.table("years").select("*").order("year").execute().data or [],
+        "annual_records": supabase.table("annual_records").select("*").execute().data or [],
+        "annual_settings": supabase.table("annual_settings").select("*").execute().data or [],
+        "notices": supabase.table("notices").select("*").execute().data or [],
+        "comments": supabase.table("comments").select("*").execute().data or [],
+    }
+    raw = json.dumps(payload, ensure_ascii=False, indent=2, default=str).encode("utf-8")
+    bio = io.BytesIO(raw); bio.seek(0)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M")
+    return send_file(bio, mimetype="application/json", as_attachment=True, download_name=f"sommilitoproyash-backup-{stamp}.json")
+
+
+@app.route("/admin/delete-year", methods=["POST"])
+@admin_required
+def delete_year():
+    year = (request.form.get("year") or "").strip()
+    years = years_all()
+    if year not in years:
+        abort(400)
+    if len(years) <= 1:
+        flash("শেষ অবশিষ্ট বছর মুছে ফেলা যাবে না।", "error")
+        return redirect(url_for("admin", year=year))
+    try:
+        yi = int(year)
+        # Delete year-specific records/settings first, then the year itself.
+        supabase.table("annual_records").delete().eq("year", yi).execute()
+        try:
+            supabase.table("annual_settings").delete().eq("year", yi).execute()
+        except Exception:
+            pass
+        supabase.table("years").delete().eq("year", yi).execute()
+        remaining = years_all()
+        next_year = remaining[0] if remaining else None
+        flash(f"{year} সালের হিসাব ও Settings সফলভাবে মুছে ফেলা হয়েছে।", "ok")
+        return redirect(url_for("admin", year=next_year) if next_year else url_for("admin"))
+    except Exception:
+        flash(f"{year} সাল মুছে ফেলা যায়নি। কোনো data সমস্যা থাকলে Supabase-এ পরীক্ষা করুন।", "error")
+        return redirect(url_for("admin", year=year))
 
 
 @app.route("/admin/add-year", methods=["POST"])
