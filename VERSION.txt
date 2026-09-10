@@ -1,6 +1,1 @@
-Version 6.5.5
-
-Fixes:
-- Fixed Admin Page 500 Internal Server Error caused by missing Home Page content context in admin template.
-- Added year-wise total Deposit and Arrear summary beside each member in the logged-in Home member list.
-- Reused already-loaded records/settings to avoid extra per-member database queries.
+6.5.6

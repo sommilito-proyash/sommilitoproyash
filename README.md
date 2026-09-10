@@ -43,3 +43,12 @@ After the v6.5.2 migration, run the extension SQL included at the end of `v6.5.2
 ## v6.5.5
 - Fixed Admin Page 500 error caused by missing `site_content` template context.
 - Added per-member year-wise total deposit and arrear summary to the logged-in Home member list.
+
+
+## Version 6.5.6 changes
+- Fixed admin comment deletion by using the real comment ID.
+- Added Select All + Delete Selected for multiple member comments.
+- Added year selector for Admin reports.
+- Added year-specific DPS/FDR summary to reports.
+- Added member report generation, CSV download and print for the selected year.
+- Full Backup remains Admin-only.

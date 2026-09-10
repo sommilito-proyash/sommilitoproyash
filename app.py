@@ -275,6 +275,33 @@ def dps_accounts():
     except Exception:
         return []
 
+def yearly_investment_summary(year):
+    """Return DPS paid and FDR added amounts for one report year."""
+    yi = int(year)
+    dps_paid = 0.0
+    fdr_added = 0.0
+    try:
+        payments = (supabase.table("dps_payments").select("dps_id,year,month")
+                    .eq("year", yi).execute().data or [])
+        if payments:
+            ids = sorted({int(x["dps_id"]) for x in payments if x.get("dps_id") is not None})
+            accounts = (supabase.table("dps_accounts").select("id,monthly_installment")
+                        .in_("id", ids).execute().data or []) if ids else []
+            amounts = {int(x["id"]): float(x.get("monthly_installment") or 0) for x in accounts}
+            dps_paid = sum(amounts.get(int(x["dps_id"]), 0.0) for x in payments)
+    except Exception:
+        dps_paid = 0.0
+    try:
+        fdrs = (supabase.table("fdr_investments").select("amount,created_at")
+                .eq("active", True).execute().data or [])
+        for x in fdrs:
+            created = str(x.get("created_at") or "")
+            if created[:4] == str(yi):
+                fdr_added += float(x.get("amount") or 0)
+    except Exception:
+        fdr_added = 0.0
+    return dps_paid, fdr_added
+
 def investment_settings():
     """Return investment/account-statement settings used by the private dashboard."""
     defaults = {"id": 1, "land_purchase_amount": 0.0, "statement_balance": 0.0}
@@ -689,17 +716,42 @@ def download_report_csv():
     members = [m for m in members_all() if m.get("active", True)]
     records = records_for_year(year)
     setting = annual_setting(year)
+    dps_paid_year, fdr_added_year = yearly_investment_summary(year)
     out = io.StringIO()
     writer = csv.writer(out)
-    writer.writerow(["Member", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "Year Deposit", "Year Arrear", "Down Payment Paid"])
+    writer.writerow(["Financial Report", year])
+    writer.writerow([])
+    writer.writerow(["Summary", "Amount"])
+    writer.writerow(["Total Deposit", 0])
+    # Summary totals are filled below after member rows are calculated.
+    report_rows = []
+    total_paid = total_arrear = total_down = 0.0
     for m in members:
         r = records.get(int(m["id"]), {"payments": [False]*12, "down_payment_1_paid": False, "down_payment_2_paid": False})
         paid, arrear, down = stats(r, m, setting)
-        pays = list(r.get("payments") or [False]*12)
-        pays = (pays + [False]*12)[:12]
+        total_paid += paid
+        total_arrear += arrear
+        total_down += down
+        report_rows.append((m, r, paid, arrear, down))
+    # Rewrite the summary section cleanly.
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["Financial Report", year])
+    writer.writerow([])
+    writer.writerow(["Summary", "Amount"])
+    writer.writerow(["Total Deposit", round(total_paid, 2)])
+    writer.writerow(["Total Arrear", round(total_arrear, 2)])
+    writer.writerow(["Down Payment Paid", round(total_down, 2)])
+    writer.writerow(["DPS Paid in Year", round(dps_paid_year, 2)])
+    writer.writerow(["FDR Added in Year", round(fdr_added_year, 2)])
+    writer.writerow([])
+    writer.writerow(["Member", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "Year Deposit", "Year Arrear", "Down Payment Paid"])
+    for m, r, paid, arrear, down in report_rows:
+        pays = (list(r.get("payments") or [False]*12) + [False]*12)[:12]
         writer.writerow([m.get("name", "")] + ["Paid" if x else "Unpaid" for x in pays] + [round(paid,2), round(arrear,2), round(down,2)])
     data = out.getvalue().encode("utf-8-sig")
-    return Response(data, mimetype="text/csv; charset=utf-8", headers={"Content-Disposition": f"attachment; filename=sommilitoproyash-{year}-report.csv"})
+    return Response(data, mimetype="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f"attachment; filename=sommilitoproyash-{year}-report.csv"})
 
 
 @app.route("/admin/report/print")
@@ -719,9 +771,70 @@ def print_report():
         paid, arrear, down = stats(r, m, setting)
         total_paid += paid; total_arrear += arrear; total_down += down
         report_rows.append((m, r, paid, arrear, down))
-    return render_template("report.html", year=year, months=MONTHS, rows=report_rows,
-                           total_paid=total_paid, total_arrear=total_arrear, total_down=total_down)
+    dps_paid_year, fdr_added_year = yearly_investment_summary(year)
+    return render_template("report.html", report_scope="admin", year=year, years=years, months=MONTHS,
+                           rows=report_rows, total_paid=total_paid, total_arrear=total_arrear,
+                           total_down=total_down, dps_paid_year=dps_paid_year,
+                           fdr_added_year=fdr_added_year)
 
+
+@app.route("/member/<int:member_id>/report/csv")
+@member_required
+def download_member_report_csv(member_id):
+    m = member_by_id(member_id)
+    if not m:
+        abort(404)
+    years = years_all()
+    year = request.args.get("year", years[0] if years else "")
+    if year not in years:
+        abort(400)
+    r = record_for(year, member_id)
+    setting = annual_setting(year)
+    paid, arrear, down = stats(r, m, setting)
+    dps_paid_year, fdr_added_year = yearly_investment_summary(year)
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["Member Financial Report", year])
+    writer.writerow([])
+    writer.writerow(["Member", m.get("name", "")])
+    writer.writerow(["Total Deposit", round(paid,2)])
+    writer.writerow(["Total Arrear", round(arrear,2)])
+    writer.writerow(["Down Payment Paid", round(down,2)])
+    writer.writerow(["DPS Paid in Year (Association)", round(dps_paid_year,2)])
+    writer.writerow(["FDR Added in Year (Association)", round(fdr_added_year,2)])
+    writer.writerow([])
+    writer.writerow(["Month", "Status", "Amount"])
+    pays = (list(r.get("payments") or [False]*12) + [False]*12)[:12]
+    monthly_value = setting.get("monthly_amount")
+    monthly = float(m.get("monthly") or 0) if monthly_value in (None, "") else float(monthly_value or 0)
+    mandatory = list(setting.get("mandatory_months") or [True]*12)
+    mandatory = (mandatory + [True]*12)[:12]
+    for i, month in enumerate(MONTHS):
+        status = "Paid" if pays[i] else ("Unpaid / Arrear" if mandatory[i] else "Optional")
+        amount = monthly if pays[i] or mandatory[i] else 0
+        writer.writerow([month, status, round(amount,2)])
+    data = out.getvalue().encode("utf-8-sig")
+    return Response(data, mimetype="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f"attachment; filename=sommilitoproyash-member-{member_id}-{year}-report.csv"})
+
+
+@app.route("/member/<int:member_id>/report/print")
+@member_required
+def print_member_report(member_id):
+    m = member_by_id(member_id)
+    if not m:
+        abort(404)
+    years = years_all()
+    year = request.args.get("year", years[0] if years else "")
+    if year not in years:
+        abort(400)
+    r = record_for(year, member_id)
+    setting = annual_setting(year)
+    paid, arrear, down = stats(r, m, setting)
+    dps_paid_year, fdr_added_year = yearly_investment_summary(year)
+    return render_template("report.html", report_scope="member", member=m, record=r,
+                           setting=setting, year=year, years=years, months=MONTHS, paid=paid, arrear=arrear,
+                           down=down, dps_paid_year=dps_paid_year, fdr_added_year=fdr_added_year)
 
 @app.route("/admin/home-content", methods=["POST"])
 @admin_required
@@ -841,7 +954,7 @@ def delete_dps(dps_id):
 def backup_data():
     # Export application data without exposing login password hashes/secrets.
     payload = {
-        "backup_version": "6.5",
+        "backup_version": "6.5.6",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "members": supabase.table("members").select("*").execute().data or [],
         "years": supabase.table("years").select("*").order("year").execute().data or [],
@@ -1079,6 +1192,23 @@ def delete_comment(member_id, comment_id):
     supabase.table("comments").delete().eq("id", comment_id).eq("member_id", member_id).execute()
     flash("মন্তব্য মুছে ফেলা হয়েছে।", "ok")
     return redirect(url_for("member", member_id=member_id))
+
+@app.route("/admin/comment/<int:member_id>/delete-selected", methods=["POST"])
+@admin_required
+def delete_selected_comments(member_id):
+    selected = request.form.getlist("comment_ids")
+    ids = []
+    for value in selected:
+        try:
+            ids.append(int(value))
+        except (TypeError, ValueError):
+            pass
+    if ids:
+        supabase.table("comments").delete().eq("member_id", member_id).in_("id", ids).execute()
+        flash(f"{len(ids)}টি মন্তব্য মুছে ফেলা হয়েছে।", "ok")
+    else:
+        flash("মোছার জন্য অন্তত একটি মন্তব্য নির্বাচন করুন।", "error")
+    return redirect(url_for("member", member_id=member_id, year=request.form.get("year", "")))
 
 
 if __name__ == "__main__":
