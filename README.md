@@ -26,3 +26,20 @@ The existing V6.4 calculation rules remain unchanged:
 No new Supabase migration is required for V6.5 because all new features use the existing V6.4 tables/columns. Deploy the updated project files to the existing GitHub/Render setup.
 
 V6.5.1 adds an English navigation bar with Home icon, selectable year chart types (Bar/Line/Pie), and keeps V6.5 functionality intact.
+
+
+## Version 6.5.2
+- Public Home no longer displays financial/member financial data.
+- Financial data remains behind Member Login.
+- Added private Fund Summary: Bank Balance, FDR and DPS.
+- Added Admin controls for Bank Balance, FDR and DPS.
+- Run `v6.5.2_supabase_migration.sql` once in Supabase SQL Editor.
+
+
+## Version 6.5.3 financial dashboard
+After the v6.5.2 migration, run the extension SQL included at the end of `v6.5.2_supabase_migration.sql`. The private Home dashboard shows all-year deposit/arrear totals, year-wise totals in descending order, land/FDR/DPS investments, calculated current balance, account-statement balance and the difference/profit. DPS installments can be toggled month-by-month per account and year from Admin. The year comparison chart is shown on the logged-in Home page for both Member and Admin sessions.
+
+
+## v6.5.5
+- Fixed Admin Page 500 error caused by missing `site_content` template context.
+- Added per-member year-wise total deposit and arrear summary to the logged-in Home member list.

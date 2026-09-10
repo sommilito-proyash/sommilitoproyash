@@ -250,9 +250,100 @@ def upload_photo(file, member_id):
     return supabase.storage.from_(BUCKET).get_public_url(path)
 
 
+def bank_balance():
+    """Return the current bank/cash balance from the fund_settings table."""
+    try:
+        rows = (supabase.table("fund_settings").select("bank_balance")
+                .eq("id", 1).limit(1).execute().data or [])
+        return float(rows[0].get("bank_balance") or 0) if rows else 0.0
+    except Exception:
+        return 0.0
+
+
+def fdr_investments():
+    try:
+        return (supabase.table("fdr_investments").select("*")
+                .eq("active", True).order("maturity_date").execute().data or [])
+    except Exception:
+        return []
+
+
+def dps_accounts():
+    try:
+        return (supabase.table("dps_accounts").select("*")
+                .eq("active", True).order("name").execute().data or [])
+    except Exception:
+        return []
+
+def investment_settings():
+    """Return investment/account-statement settings used by the private dashboard."""
+    defaults = {"id": 1, "land_purchase_amount": 0.0, "statement_balance": 0.0}
+    try:
+        rows = (supabase.table("investment_settings").select("*")
+                .eq("id", 1).limit(1).execute().data or [])
+        if rows:
+            row = rows[0]
+            defaults["land_purchase_amount"] = float(row.get("land_purchase_amount") or 0)
+            defaults["statement_balance"] = float(row.get("statement_balance") or 0)
+    except Exception:
+        pass
+    return defaults
+
+
+def dps_paid_months(dps_id, years):
+    """Return {year: [12 booleans]} for DPS installments already deducted."""
+    result = {int(y): [False] * 12 for y in years}
+    if not years:
+        return result
+    try:
+        rows = (supabase.table("dps_payments").select("year,month")
+                .eq("dps_id", int(dps_id)).in_("year", [int(y) for y in years]).execute().data or [])
+        for row in rows:
+            y, m = int(row["year"]), int(row["month"])
+            if y in result and 1 <= m <= 12:
+                result[y][m-1] = True
+    except Exception:
+        pass
+    return result
+
+
+def enrich_dps_accounts(dps_list, years):
+    total = 0.0
+    enriched = []
+    for d in dps_list:
+        item = dict(d)
+        paid_months = dps_paid_months(d["id"], years)
+        item["paid_months"] = paid_months
+        installment = float(d.get("monthly_installment") or 0)
+        item["paid_amount"] = sum(sum(months) * installment for months in paid_months.values())
+        total += item["paid_amount"]
+        enriched.append(item)
+    return enriched, total
+
+
 def comments_for(member_id):
     return (supabase.table("comments").select("*").eq("member_id", member_id)
             .order("created_at", desc=True).execute().data or [])
+
+
+def get_site_content():
+    defaults = {
+        "home_title": "সম্মিলিত প্রয়াস",
+        "home_purpose_title": "আমাদের উদ্দেশ্য",
+        "home_purpose_text": "সমিতির সদস্যদের সম্মিলিত সঞ্চয়, পারস্পরিক সহযোগিতা এবং ভবিষ্যৎ ফ্ল্যাট নির্মাণ প্রকল্প বাস্তবায়নের লক্ষ্যে এই উদ্যোগ পরিচালিত হচ্ছে।",
+    }
+    try:
+        rows = supabase.table("site_settings").select("key,value").execute().data or []
+        values = {r.get("key"): r.get("value", "") for r in rows}
+        return {k: values.get(k, v) or v for k, v in defaults.items()}
+    except Exception:
+        return defaults
+
+
+def save_site_content(home_title, purpose_title, purpose_text):
+    values = {"home_title": home_title.strip()[:150], "home_purpose_title": purpose_title.strip()[:150], "home_purpose_text": purpose_text.strip()[:2000]}
+    for key, value in values.items():
+        supabase.table("site_settings").upsert({"key": key, "value": value, "updated_at": datetime.now(timezone.utc).isoformat()}, on_conflict="key").execute()
 
 
 def get_setting(key, default=""):
@@ -320,60 +411,65 @@ def member_required(fn):
 
 
 @app.route("/")
-@member_required
 def index():
-    years = years_all()
-    if not years:
-        abort(500, "No years found in database.")
-    year = request.args.get("year", years[0])
-    if year not in years:
-        year = years[0]
-
-    # Performance: fetch members, all annual records and all annual settings
-    # in bulk instead of making a separate request for every member/year.
-    active = [m for m in members_all() if m.get("active", True)]
-    all_records = records_for_years(years)
-    try:
-        settings = annual_settings_all(years)
-    except Exception:
-        settings = {}
-    setting = settings.get(int(year)) or annual_setting(year)
-    current_year = int(year)
-
-    rows, total_paid, total_arrear, total_down = [], 0, 0, 0
-    grand_total_paid = grand_total_arrear = grand_total_down = 0
-    for m in active:
-        r = all_records.get((current_year, int(m["id"])), {
-            "year": current_year, "member_id": m["id"], "payments": [False] * 12,
-            "down_payment_1": 0, "down_payment_2": 0,
-            "down_payment_1_paid": False, "down_payment_2_paid": False
-        })
-        paid, arrear, down = stats(r, m, setting)
-        grand_paid, grand_arrear, grand_down = yearly_member_totals(
-            m["id"], m, years=years, records=all_records, settings=settings
-        )
-        rows.append((m, r, paid, arrear, down, grand_paid, grand_arrear, grand_down))
-        total_paid += paid
-        total_arrear += arrear
-        total_down += down
-        grand_total_paid += grand_paid
-        grand_total_arrear += grand_arrear
-        grand_total_down += grand_down
-
-    year_summaries = []
-    for y in years:
-        ys = settings.get(int(y)) or default_annual_setting(y)
-        yp, ya, yd = year_summary(y, active, all_records, ys)
-        year_summaries.append({"year": int(y), "paid": yp, "arrear": ya, "down": yd})
-    max_chart = max([max(float(x["paid"]), float(x["arrear"])) for x in year_summaries] or [1])
-
+    """Public home page plus private financial dashboard after login."""
     notices = (supabase.table("notices").select("*")
                .order("pinned", desc=True).order("created_at", desc=True).execute().data or [])
-    return render_template("index.html", members=rows, years=years, year=year, months=MONTHS,
-                           total_paid=total_paid, total_arrear=total_arrear, total_down=total_down,
-                           grand_total_paid=grand_total_paid, grand_total_arrear=grand_total_arrear,
-                           grand_total_down=grand_total_down, year_summaries=year_summaries, max_chart=max_chart, setting=setting,
-                           admin=session.get("admin", False), notices=notices)
+    site_content = get_site_content()
+    logged_member = bool(session.get("member") or session.get("admin"))
+    dashboard = None
+    if logged_member:
+        years = years_all()
+        active_members = [m for m in members_all() if m.get("active", True)]
+        all_records = records_for_years(years)
+        settings = annual_settings_all(years)
+        year_summaries = []
+        for y in years:
+            yp, ya, yd = year_summary(y, active_members, all_records, settings.get(int(y)) or default_annual_setting(y))
+            year_summaries.append({"year": int(y), "paid": yp, "arrear": ya, "down": yd})
+        grand_paid = sum(x["paid"] for x in year_summaries)
+        grand_arrear = sum(x["arrear"] for x in year_summaries)
+        fdrs = fdr_investments()
+        dps_raw = dps_accounts()
+        dps, total_dps_paid = enrich_dps_accounts(dps_raw, years)
+        inv = investment_settings()
+        total_fdr = sum(float(x.get("amount") or 0) for x in fdrs)
+        land = float(inv["land_purchase_amount"])
+        total_invested = land + total_fdr + total_dps_paid
+        current_balance = grand_paid - total_invested
+        statement_balance = float(inv["statement_balance"])
+        profit = statement_balance - current_balance
+        dashboard = {"years": years, "year_summaries": year_summaries,
+                     "grand_paid": grand_paid, "grand_arrear": grand_arrear,
+                     "fdrs": fdrs, "dps": dps, "land_purchase_amount": land,
+                     "total_fdr": total_fdr, "total_dps_paid": total_dps_paid,
+                     "total_invested": total_invested, "current_balance": current_balance,
+                     "statement_balance": statement_balance, "profit": profit,
+                     "is_admin": bool(session.get("admin"))}
+    active_members = []
+    if logged_member:
+        active_members = [m for m in members_all() if m.get("active", True)]
+        # Reuse the records/settings already fetched for the dashboard so the
+        # member list does not create one database query per member/year.
+        member_list = []
+        for m in active_members:
+            item = dict(m)
+            item["year_summaries"] = []
+            for y in years:
+                yi = int(y)
+                setting = settings.get(yi) or default_annual_setting(yi)
+                rec = all_records.get((yi, int(m["id"])), {
+                    "year": yi, "member_id": m["id"], "payments": [False] * 12,
+                    "down_payment_1": 0, "down_payment_2": 0,
+                    "down_payment_1_paid": False, "down_payment_2_paid": False
+                })
+                paid, arrear, _ = stats(rec, m, setting)
+                item["year_summaries"].append({"year": yi, "paid": paid, "arrear": arrear})
+            member_list.append(item)
+        active_members = member_list
+    return render_template("index.html", notices=notices, logged_member=logged_member,
+                           active_members=active_members, admin=session.get("admin", False),
+                           dashboard=dashboard, site_content=site_content)
 
 
 @app.route("/member/<int:member_id>")
@@ -406,10 +502,16 @@ def member(member_id):
     grand_paid, grand_arrear, grand_down = yearly_member_totals(
         member_id, m, years=years, records=all_records, settings=settings
     )
+    fdrs = fdr_investments()
+    dps = dps_accounts()
+    total_fdr = sum(float(x.get("amount") or 0) for x in fdrs)
+    total_dps_installment = sum(float(x.get("monthly_installment") or 0) for x in dps)
     return render_template("member.html", member=m, record=r, months=MONTHS, years=years,
                            year=year, paid=paid, arrear=arrear, down=down,
                            grand_paid=grand_paid, grand_arrear=grand_arrear, grand_down=grand_down,
-                           setting=setting, admin=session.get("admin", False), comments=comments_for(member_id))
+                           setting=setting, admin=session.get("admin", False), comments=comments_for(member_id),
+                           bank_balance=bank_balance(), fdrs=fdrs, dps=dps,
+                           total_fdr=total_fdr, total_dps_installment=total_dps_installment)
 
 
 @app.route("/member/<int:member_id>/comment", methods=["POST"])
@@ -513,8 +615,17 @@ def admin():
 
     notices = supabase.table("notices").select("*").order("created_at", desc=True).execute().data or []
     member_email, _ = member_credentials()
+    current_bank_balance = bank_balance()
+    current_fdrs = fdr_investments()
+    current_dps_raw = dps_accounts()
+    current_dps, current_dps_paid_total = enrich_dps_accounts(current_dps_raw, years)
+    current_fdr_total = sum(float(x.get("amount") or 0) for x in current_fdrs)
+    current_dps_installment_total = sum(float(x.get("monthly_installment") or 0) for x in current_dps)
+    current_investments = investment_settings()
 
     # Dashboard totals and year comparison chart data.
+    # Home Page editable content is also needed by the Admin template.
+    site_content = get_site_content()
     active_members = [m for m in members if m.get("active", True)]
     all_records = records_for_years(years)
     year_summaries = []
@@ -549,15 +660,23 @@ def admin():
         monthly_rows.append({"member": m, "paid": is_paid, "mandatory": mandatory, "amount": amount})
 
     current_summary = next((x for x in year_summaries if x["year"] == yi), {"paid": 0, "arrear": 0, "down": 0})
+    # Grand totals across all years (active members only).
+    grand_paid = sum(float(x.get("paid") or 0) for x in year_summaries)
+    grand_arrear = sum(float(x.get("arrear") or 0) for x in year_summaries)
+    grand_down = sum(float(x.get("down") or 0) for x in year_summaries)
     max_chart = max([max(float(x["paid"]), float(x["arrear"])) for x in year_summaries] or [1])
     return render_template("admin.html", members=rows, years=years, year=year, months=MONTHS,
                            notices=notices, member_email=member_email, setting=setting,
                            year_summaries=year_summaries, max_chart=max_chart,
                            current_paid=current_summary["paid"], current_arrear=current_summary["arrear"], current_down=current_summary["down"],
+                           grand_paid=grand_paid, grand_arrear=grand_arrear, grand_down=grand_down,
                            monthly_rows=monthly_rows, selected_month=month_idx,
                            monthly_collected=monthly_collected, monthly_due=monthly_due,
                            monthly_paid_count=monthly_paid_count, monthly_due_count=monthly_due_count,
-                           active_member_count=len(active_members))
+                           active_member_count=len(active_members), site_content=site_content,
+                           bank_balance=current_bank_balance, fdrs=current_fdrs, dps=current_dps,
+                           fdr_total=current_fdr_total, dps_installment_total=current_dps_installment_total,
+                           dps_paid_total=current_dps_paid_total, investment_settings=current_investments)
 
 
 @app.route("/admin/report/csv")
@@ -604,6 +723,119 @@ def print_report():
                            total_paid=total_paid, total_arrear=total_arrear, total_down=total_down)
 
 
+@app.route("/admin/home-content", methods=["POST"])
+@admin_required
+def update_home_content():
+    try:
+        save_site_content(request.form.get("home_title") or "সম্মিলিত প্রয়াস", request.form.get("home_purpose_title") or "আমাদের উদ্দেশ্য", request.form.get("home_purpose_text") or "")
+        flash("Home page-এর লেখা সফলভাবে Save হয়েছে।", "ok")
+    except Exception:
+        app.logger.exception("Home content save failed")
+        flash("Home page-এর লেখা Save করা যায়নি।", "error")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/investment-settings", methods=["POST"])
+@admin_required
+def update_investment_settings():
+    """Save land investment and actual account-statement balance reliably."""
+    try:
+        land_raw = (request.form.get("land_purchase_amount") or "0").strip()
+        statement_raw = (request.form.get("statement_balance") or "0").strip()
+        land = max(0, float(land_raw or 0))
+        statement = max(0, float(statement_raw or 0))
+        payload = {
+            "id": 1,
+            "land_purchase_amount": land,
+            "statement_balance": statement,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        # Upsert makes Save work whether the single settings row already exists or not.
+        supabase.table("investment_settings").upsert(payload, on_conflict="id").execute()
+        flash("Investment ও Account Statement তথ্য সফলভাবে Save হয়েছে।", "ok")
+    except ValueError:
+        flash("Amount-এর ঘরে শুধু সঠিক সংখ্যা দিন।", "error")
+    except Exception as e:
+        app.logger.exception("Investment settings save failed")
+        flash("Settings Save করা যায়নি। Supabase-এ v6.5.3 migration SQL Run করা হয়েছে কি না নিশ্চিত করুন।", "error")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/fdr/add", methods=["POST"])
+@admin_required
+def add_fdr():
+    name=(request.form.get("name") or "").strip()
+    bank=(request.form.get("bank") or "").strip()
+    if not name or not bank:
+        flash("FDR Name ও Bank Name দিন।", "error")
+        return redirect(url_for("admin"))
+    try: amount=max(0,float(request.form.get("amount","0") or 0))
+    except ValueError: amount=0
+    supabase.table("fdr_investments").insert({
+        "name":name[:150], "bank":bank[:150], "amount":amount,
+        "maturity_date":(request.form.get("maturity_date") or None),
+        "notes":(request.form.get("notes") or "").strip()[:500], "active":True
+    }).execute()
+    flash("FDR যোগ হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/fdr/<int:fdr_id>/delete", methods=["POST"])
+@admin_required
+def delete_fdr(fdr_id):
+    supabase.table("fdr_investments").update({"active":False}).eq("id",fdr_id).execute()
+    flash("FDR সরানো হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/dps/add", methods=["POST"])
+@admin_required
+def add_dps():
+    name=(request.form.get("name") or "").strip()
+    bank=(request.form.get("bank") or "").strip()
+    if not name or not bank:
+        flash("DPS Name ও Bank Name দিন।","error")
+        return redirect(url_for("admin"))
+    try: installment=max(0,float(request.form.get("monthly_installment","0") or 0))
+    except ValueError: installment=0
+    supabase.table("dps_accounts").insert({
+        "name":name[:150], "bank":bank[:150], "monthly_installment":installment,
+        "start_date":(request.form.get("start_date") or None),
+        "maturity_date":(request.form.get("maturity_date") or None),
+        "notes":(request.form.get("notes") or "").strip()[:500], "active":True
+    }).execute()
+    flash("DPS যোগ হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/dps/<int:dps_id>/toggle-payment", methods=["POST"])
+@admin_required
+def toggle_dps_payment(dps_id):
+    try:
+        year = int(request.form.get("year", "0"))
+        month = int(request.form.get("month", "0"))
+        if year not in [int(y) for y in years_all()] or not 1 <= month <= 12:
+            abort(400)
+        existing = (supabase.table("dps_payments").select("id")
+                    .eq("dps_id", dps_id).eq("year", year).eq("month", month).limit(1).execute().data or [])
+        if existing:
+            supabase.table("dps_payments").delete().eq("id", existing[0]["id"]).execute()
+        else:
+            supabase.table("dps_payments").insert({"dps_id": dps_id, "year": year, "month": month}).execute()
+        flash("DPS মাসের status পরিবর্তন হয়েছে।", "ok")
+    except Exception:
+        flash("DPS payment status পরিবর্তন করা যায়নি। Migration SQL আগে Run করুন।", "error")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/dps/<int:dps_id>/delete", methods=["POST"])
+@admin_required
+def delete_dps(dps_id):
+    supabase.table("dps_accounts").update({"active":False}).eq("id",dps_id).execute()
+    flash("DPS সরানো হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
 @app.route("/admin/backup")
 @admin_required
 def backup_data():
@@ -615,6 +847,11 @@ def backup_data():
         "years": supabase.table("years").select("*").order("year").execute().data or [],
         "annual_records": supabase.table("annual_records").select("*").execute().data or [],
         "annual_settings": supabase.table("annual_settings").select("*").execute().data or [],
+        "fund_settings": supabase.table("fund_settings").select("*").execute().data or [],
+        "fdr_investments": supabase.table("fdr_investments").select("*").execute().data or [],
+        "dps_accounts": supabase.table("dps_accounts").select("*").execute().data or [],
+        "dps_payments": supabase.table("dps_payments").select("*").execute().data or [],
+        "investment_settings": supabase.table("investment_settings").select("*").execute().data or [],
         "notices": supabase.table("notices").select("*").execute().data or [],
         "comments": supabase.table("comments").select("*").execute().data or [],
     }

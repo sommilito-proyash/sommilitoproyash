@@ -547,3 +547,19 @@ th{
 .chart-type-select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-weight:600}
 .year-chart-canvas{display:block;width:100%;height:330px;max-height:330px}
 @media(max-width:700px){.year-chart-canvas{height:280px;max-height:280px}.chart-toolbar{align-items:flex-start}}
+
+
+/* Vertical member list: photo and name only */
+.member-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.member-list-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #e5e7eb;border-radius:10px;text-decoration:none;color:inherit;background:#fff}
+.member-list-item:hover{transform:translateY(-1px)}
+.member-list-item strong{font-size:1rem}
+.member-list-item .mini{flex:0 0 38px;width:38px;height:38px;margin-right:0}
+.mini-placeholder{display:flex;align-items:center;justify-content:center;border-radius:50%;background:#f1f5f9}
+/* v6.5.4 member list financial summary */
+.member-list-info{min-width:0;display:flex;flex-direction:column;gap:4px}
+.member-financial-summary{display:flex;flex-direction:column;gap:2px;font-size:.84rem;line-height:1.35;color:#475569}
+.member-financial-summary span{white-space:normal}
+.member-financial-summary b{font-weight:700;color:#334155}
+@media (max-width:600px){.member-list-item{align-items:flex-start}.member-list-item .mini{margin-top:2px}.member-financial-summary{font-size:.78rem}}
+
