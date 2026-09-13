@@ -52,3 +52,20 @@ After the v6.5.2 migration, run the extension SQL included at the end of `v6.5.2
 - Added year-specific DPS/FDR summary to reports.
 - Added member report generation, CSV download and print for the selected year.
 - Full Backup remains Admin-only.
+
+
+## Version 6.5.7
+- Separate Public and Member Notice Boards with Admin editing.
+- Editable FDR/DPS investment records.
+- Admin password change stored as a hash in Supabase.
+- Admin scroll position preserved after updates.
+- Member NID and nominee information/photo fields.
+- Run `v6.5.7_supabase_migration.sql` once in Supabase SQL Editor.
+
+
+## Version 6.5.8
+- Added private per-member Nominee Information access using a separate 4-digit PIN.
+- Common Member Login remains unchanged; members still share the same login and can see the same general/financial information.
+- Initial nominee PIN is 1234 for members without a PIN. Members must change it before viewing their nominee details.
+- Admin can reset any member's nominee PIN to 1234 without seeing the current PIN.
+- Nominee PINs are stored as password hashes.

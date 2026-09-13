@@ -27,6 +27,17 @@ MONTHS = ["January", "February", "March", "April", "May", "June",
           "July", "August", "September", "October", "November", "December"]
 
 
+def admin_credentials():
+    """Read the admin password hash from Supabase; fall back to the environment password."""
+    try:
+        rows = (supabase.table("admin_settings").select("admin_password_hash")
+                .eq("id", 1).limit(1).execute().data or [])
+        if rows:
+            return rows[0].get("admin_password_hash") or ""
+    except Exception:
+        pass
+    return ""
+
 def admin_required(fn):
     @wraps(fn)
     def w(*a, **kw):
@@ -50,6 +61,25 @@ def members_all():
 def member_by_id(member_id):
     rows = supabase.table("members").select("*").eq("id", member_id).limit(1).execute().data or []
     return rows[0] if rows else None
+
+INITIAL_MEMBER_PIN = "1234"
+
+def member_pin_hash(member):
+    """Return the stored personal nominee PIN hash, or empty for the initial PIN."""
+    return (member or {}).get("nominee_pin_hash") or ""
+
+def verify_member_pin(member, pin):
+    pin = str(pin or "")
+    saved_hash = member_pin_hash(member)
+    if saved_hash:
+        try:
+            return check_password_hash(saved_hash, pin)
+        except Exception:
+            return False
+    return pin == INITIAL_MEMBER_PIN
+
+def nominee_pin_is_initial(member):
+    return not bool(member_pin_hash(member))
 
 
 def years_all():
@@ -250,6 +280,18 @@ def upload_photo(file, member_id):
     return supabase.storage.from_(BUCKET).get_public_url(path)
 
 
+def upload_nominee_photo(file, member_id):
+    if not file or not file.filename:
+        return None
+    ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        return None
+    path = f"nominee_{member_id}{ext}"
+    content_type = file.mimetype or "image/jpeg"
+    supabase.storage.from_(BUCKET).upload(path, file.read(), {"content-type": content_type, "upsert": "true"})
+    return supabase.storage.from_(BUCKET).get_public_url(path)
+
+
 def bank_balance():
     """Return the current bank/cash balance from the fund_settings table."""
     try:
@@ -440,8 +482,10 @@ def member_required(fn):
 @app.route("/")
 def index():
     """Public home page plus private financial dashboard after login."""
-    notices = (supabase.table("notices").select("*")
-               .order("pinned", desc=True).order("created_at", desc=True).execute().data or [])
+    all_notices = (supabase.table("notices").select("*")
+                   .order("pinned", desc=True).order("created_at", desc=True).execute().data or [])
+    public_notices = [n for n in all_notices if (n.get("audience") or "public") == "public"]
+    member_notices = [n for n in all_notices if (n.get("audience") or "public") == "member"]
     site_content = get_site_content()
     logged_member = bool(session.get("member") or session.get("admin"))
     dashboard = None
@@ -494,9 +538,9 @@ def index():
                 item["year_summaries"].append({"year": yi, "paid": paid, "arrear": arrear})
             member_list.append(item)
         active_members = member_list
-    return render_template("index.html", notices=notices, logged_member=logged_member,
+    return render_template("index.html", logged_member=logged_member,
                            active_members=active_members, admin=session.get("admin", False),
-                           dashboard=dashboard, site_content=site_content)
+                           dashboard=dashboard, site_content=site_content, public_notices=public_notices, member_notices=member_notices)
 
 
 @app.route("/member/<int:member_id>")
@@ -541,6 +585,88 @@ def member(member_id):
                            total_fdr=total_fdr, total_dps_installment=total_dps_installment)
 
 
+
+@app.route("/member/<int:member_id>/nominee", methods=["GET", "POST"])
+@member_required
+def nominee(member_id):
+    """Private nominee page. Admin can view directly; members must prove the selected member's PIN."""
+    m = member_by_id(member_id)
+    if not m or not bool(m.get("active", True)):
+        abort(404)
+
+    if session.get("admin"):
+        return render_template("nominee.html", member=m, admin=True, verified=True,
+                               initial_pin=nominee_pin_is_initial(m), error=None)
+
+    verified_id = session.get("nominee_verified_member_id")
+    if verified_id == member_id:
+        return render_template("nominee.html", member=m, admin=False, verified=True,
+                               initial_pin=nominee_pin_is_initial(m), error=None)
+
+    error = None
+    if request.method == "POST":
+        pin = request.form.get("pin") or ""
+        if verify_member_pin(m, pin):
+            session["nominee_verified_member_id"] = member_id
+            return redirect(url_for("nominee", member_id=member_id))
+        error = "PIN সঠিক নয়।"
+
+    return render_template("nominee.html", member=m, admin=False, verified=False,
+                           initial_pin=nominee_pin_is_initial(m), error=error)
+
+@app.route("/member/<int:member_id>/nominee/change-pin", methods=["POST"])
+@member_required
+def change_nominee_pin(member_id):
+    m = member_by_id(member_id)
+    if not m or not bool(m.get("active", True)):
+        abort(404)
+    if not session.get("admin") and session.get("nominee_verified_member_id") != member_id:
+        return redirect(url_for("nominee", member_id=member_id))
+
+    current = request.form.get("current_pin") or ""
+    new_pin = request.form.get("new_pin") or ""
+    confirm = request.form.get("confirm_pin") or ""
+
+    if not session.get("admin") and not verify_member_pin(m, current):
+        flash("বর্তমান PIN সঠিক নয়।", "error")
+        return redirect(url_for("nominee", member_id=member_id))
+    if not new_pin.isdigit() or len(new_pin) != 4:
+        flash("নতুন PIN অবশ্যই ৪ সংখ্যার হতে হবে।", "error")
+        return redirect(url_for("nominee", member_id=member_id))
+    if new_pin != confirm:
+        flash("নতুন দুইটি PIN একই নয়।", "error")
+        return redirect(url_for("nominee", member_id=member_id))
+    if new_pin == INITIAL_MEMBER_PIN:
+        flash("নতুন PIN 1234 রাখা যাবে না। অন্য ৪ সংখ্যার PIN দিন।", "error")
+        return redirect(url_for("nominee", member_id=member_id))
+
+    try:
+        supabase.table("members").update({
+            "nominee_pin_hash": generate_password_hash(new_pin)
+        }).eq("id", member_id).execute()
+        session["nominee_verified_member_id"] = member_id
+        flash("Nominee PIN সফলভাবে পরিবর্তন হয়েছে।", "ok")
+    except Exception:
+        app.logger.exception("Nominee PIN change failed")
+        flash("PIN পরিবর্তন করা যায়নি। Supabase migration SQL Run হয়েছে কি না নিশ্চিত করুন।", "error")
+    return redirect(url_for("nominee", member_id=member_id))
+
+@app.route("/admin/member/<int:member_id>/reset-nominee-pin", methods=["POST"])
+@admin_required
+def reset_nominee_pin(member_id):
+    m = member_by_id(member_id)
+    if not m:
+        abort(404)
+    try:
+        supabase.table("members").update({
+            "nominee_pin_hash": generate_password_hash(INITIAL_MEMBER_PIN)
+        }).eq("id", member_id).execute()
+        flash(f"{m.get('name','সদস্য')} এর Nominee PIN 1234-এ Reset হয়েছে। সদস্যকে প্রথম সুযোগে নতুন PIN সেট করতে বলুন।", "ok")
+    except Exception:
+        app.logger.exception("Nominee PIN reset failed")
+        flash("Nominee PIN Reset করা যায়নি। Supabase migration SQL Run হয়েছে কি না নিশ্চিত করুন।", "error")
+    return redirect(url_for("edit_member", member_id=member_id))
+
 @app.route("/member/<int:member_id>/comment", methods=["POST"])
 @member_required
 def add_comment(member_id):
@@ -557,12 +683,49 @@ def add_comment(member_id):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        if request.form.get("password") == ADMIN_PASSWORD:
+        password = request.form.get("password") or ""
+        saved_hash = admin_credentials()
+        valid = (bool(saved_hash) and check_password_hash(saved_hash, password)) or (
+            not saved_hash and ADMIN_PASSWORD and password == ADMIN_PASSWORD
+        )
+        if valid:
             session.clear()
             session["admin"] = True
             return redirect(request.args.get("next") or url_for("index"))
         return render_template("login.html", error="পাসওয়ার্ড সঠিক নয়।")
     return render_template("login.html", error=None)
+
+
+@app.route("/admin/admin-password", methods=["POST"])
+@admin_required
+def update_admin_password():
+    current = request.form.get("current_password") or ""
+    new_password = request.form.get("new_password") or ""
+    confirm = request.form.get("new_password_confirm") or ""
+    saved_hash = admin_credentials()
+    current_ok = check_password_hash(saved_hash, current) if saved_hash else (
+        bool(ADMIN_PASSWORD) and current == ADMIN_PASSWORD
+    )
+    if not current_ok:
+        flash("বর্তমান Admin Password সঠিক নয়।", "error")
+        return redirect(url_for("admin"))
+    if len(new_password) < 6:
+        flash("নতুন Admin Password কমপক্ষে 6 অক্ষরের হতে হবে।", "error")
+        return redirect(url_for("admin"))
+    if new_password != confirm:
+        flash("নতুন দুইটি Password একই নয়।", "error")
+        return redirect(url_for("admin"))
+    try:
+        supabase.table("admin_settings").upsert({
+            "id": 1,
+            "admin_password_hash": generate_password_hash(new_password),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }, on_conflict="id").execute()
+        flash("Admin Password সফলভাবে পরিবর্তন হয়েছে।", "ok")
+    except Exception:
+        app.logger.exception("Admin password update failed")
+        flash("Admin Password পরিবর্তন করা যায়নি। Supabase migration SQL Run হয়েছে কি না নিশ্চিত করুন।", "error")
+    return redirect(url_for("admin"))
 
 
 @app.route("/member-login", methods=["GET", "POST"])
@@ -893,6 +1056,28 @@ def add_fdr():
     return redirect(url_for("admin"))
 
 
+@app.route("/admin/fdr/<int:fdr_id>/edit", methods=["POST"])
+@admin_required
+def edit_fdr(fdr_id):
+    name = (request.form.get("name") or "").strip()
+    bank = (request.form.get("bank") or "").strip()
+    try:
+        amount = max(0, float(request.form.get("amount", "0") or 0))
+    except ValueError:
+        flash("FDR Amount সঠিক সংখ্যা দিন।", "error")
+        return redirect(url_for("admin"))
+    if not name or not bank:
+        flash("FDR Name ও Bank Name দিন।", "error")
+        return redirect(url_for("admin"))
+    supabase.table("fdr_investments").update({
+        "name": name[:150], "bank": bank[:150], "amount": amount,
+        "maturity_date": request.form.get("maturity_date") or None,
+        "notes": (request.form.get("notes") or "").strip()[:500]
+    }).eq("id", fdr_id).execute()
+    flash("FDR তথ্য আপডেট হয়েছে।", "ok")
+    return redirect(url_for("admin"))
+
+
 @app.route("/admin/fdr/<int:fdr_id>/delete", methods=["POST"])
 @admin_required
 def delete_fdr(fdr_id):
@@ -918,6 +1103,30 @@ def add_dps():
         "notes":(request.form.get("notes") or "").strip()[:500], "active":True
     }).execute()
     flash("DPS যোগ হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/dps/<int:dps_id>/edit", methods=["POST"])
+@admin_required
+def edit_dps(dps_id):
+    name = (request.form.get("name") or "").strip()
+    bank = (request.form.get("bank") or "").strip()
+    try:
+        installment = max(0, float(request.form.get("monthly_installment", "0") or 0))
+    except ValueError:
+        flash("DPS Monthly Installment সঠিক সংখ্যা দিন।", "error")
+        return redirect(url_for("admin"))
+    if not name or not bank:
+        flash("DPS Name ও Bank Name দিন।", "error")
+        return redirect(url_for("admin"))
+    supabase.table("dps_accounts").update({
+        "name": name[:150], "bank": bank[:150],
+        "monthly_installment": installment,
+        "start_date": request.form.get("start_date") or None,
+        "maturity_date": request.form.get("maturity_date") or None,
+        "notes": (request.form.get("notes") or "").strip()[:500]
+    }).eq("id", dps_id).execute()
+    flash("DPS তথ্য আপডেট হয়েছে।", "ok")
     return redirect(url_for("admin"))
 
 
@@ -954,9 +1163,12 @@ def delete_dps(dps_id):
 def backup_data():
     # Export application data without exposing login password hashes/secrets.
     payload = {
-        "backup_version": "6.5.6",
+        "backup_version": "6.5.8",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "members": supabase.table("members").select("*").execute().data or [],
+        "members": [
+            {k: v for k, v in m.items() if k != "nominee_pin_hash"}
+            for m in (supabase.table("members").select("*").execute().data or [])
+        ],
         "years": supabase.table("years").select("*").order("year").execute().data or [],
         "annual_records": supabase.table("annual_records").select("*").execute().data or [],
         "annual_settings": supabase.table("annual_settings").select("*").execute().data or [],
@@ -1121,9 +1333,15 @@ def edit_member(member_id):
         updates = {"name": request.form.get("name", "").strip(), "phone": request.form.get("phone", "").strip(),
                    "address": request.form.get("address", "").strip(), "monthly": max(0, monthly),
                    "blood_group": request.form.get("blood_group", "").strip(),
-                   "personal_email": request.form.get("personal_email", "").strip()}
+                   "personal_email": request.form.get("personal_email", "").strip(),
+                   "nid_number": request.form.get("nid_number", "").strip(),
+                   "nominee_name": request.form.get("nominee_name", "").strip(),
+                   "nominee_mobile": request.form.get("nominee_mobile", "").strip(),
+                   "nominee_nid": request.form.get("nominee_nid", "").strip()}
         photo = upload_photo(request.files.get("photo"), member_id)
         if photo: updates["photo"] = photo
+        nominee_photo = upload_nominee_photo(request.files.get("nominee_photo"), member_id)
+        if nominee_photo: updates["nominee_photo"] = nominee_photo
         supabase.table("members").update(updates).eq("id", member_id).execute()
         flash("সদস্যের তথ্য সংরক্ষণ হয়েছে।", "ok")
         return redirect(url_for("admin"))
@@ -1142,10 +1360,20 @@ def add_member():
     except ValueError: monthly = 1000
     row = {"id": new_id, "name": name, "monthly": max(0, monthly), "phone": request.form.get("phone", "").strip(),
            "address": request.form.get("address", "").strip(), "blood_group": request.form.get("blood_group", "").strip(),
-           "personal_email": request.form.get("personal_email", "").strip(), "photo": "", "active": True}
+           "personal_email": request.form.get("personal_email", "").strip(),
+           "nid_number": request.form.get("nid_number", "").strip(),
+           "nominee_name": request.form.get("nominee_name", "").strip(),
+           "nominee_mobile": request.form.get("nominee_mobile", "").strip(),
+           "nominee_nid": request.form.get("nominee_nid", "").strip(),
+           "photo": "", "nominee_photo": "", "active": True}
     supabase.table("members").insert(row).execute()
     photo = upload_photo(request.files.get("photo"), new_id)
-    if photo: supabase.table("members").update({"photo": photo}).eq("id", new_id).execute()
+    nominee_photo = upload_nominee_photo(request.files.get("nominee_photo"), new_id)
+    photo_updates = {}
+    if photo: photo_updates["photo"] = photo
+    if nominee_photo: photo_updates["nominee_photo"] = nominee_photo
+    if photo_updates:
+        supabase.table("members").update(photo_updates).eq("id", new_id).execute()
     for y in years_all():
         supabase.table("annual_records").insert({"year": int(y), "member_id": new_id, "payments": [False]*12,
             "down_payment_1": 0, "down_payment_2": 0,
@@ -1170,11 +1398,33 @@ def toggle_member_status(member_id):
 def add_notice():
     title = (request.form.get("title") or "").strip()
     body = (request.form.get("body") or "").strip()
+    audience = request.form.get("audience") if request.form.get("audience") in ("public", "member") else "public"
     pinned = request.form.get("pinned") == "1"
     if title and body:
-        supabase.table("notices").insert({"title": title[:150], "body": body[:2000], "pinned": pinned}).execute()
+        supabase.table("notices").insert({
+            "title": title[:150], "body": body[:2000],
+            "audience": audience, "pinned": pinned
+        }).execute()
         flash("নোটিশ যোগ হয়েছে।", "ok")
     else: flash("নোটিশের শিরোনাম ও লেখা দুটোই দিন।", "error")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/notice/<int:notice_id>/edit", methods=["POST"])
+@admin_required
+def edit_notice(notice_id):
+    title = (request.form.get("title") or "").strip()
+    body = (request.form.get("body") or "").strip()
+    audience = request.form.get("audience") if request.form.get("audience") in ("public", "member") else "public"
+    pinned = request.form.get("pinned") == "1"
+    if not title or not body:
+        flash("নোটিশের শিরোনাম ও লেখা দুটোই দিতে হবে।", "error")
+        return redirect(url_for("admin"))
+    supabase.table("notices").update({
+        "title": title[:150], "body": body[:2000],
+        "audience": audience, "pinned": pinned
+    }).eq("id", notice_id).execute()
+    flash("নোটিশ সফলভাবে আপডেট হয়েছে।", "ok")
     return redirect(url_for("admin"))
 
 

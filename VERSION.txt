@@ -1,1 +1,2 @@
-6.5.6
+Version 6.5.8
+Private per-member Nominee PIN, member PIN change, and Admin PIN reset.

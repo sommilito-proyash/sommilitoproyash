@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Private Nominee — {{member.name}}</title><link rel="stylesheet" href="/static/style.css"></head>
+<body><header><a class="brand" href="/"><img src="/static/logo.svg" alt="সম্মিলিত প্রয়াস"></a>
+<nav><a href="/"><img class="nav-home-icon" src="/static/house.svg" alt="">Home</a>{% if admin %}<a href="/admin">Admin</a>{% endif %}<a href="/logout">Logout</a></nav></header><main>
+<div class="panel">
+<div class="section-title"><span>🔒</span><h2>Private Nominee Information</h2></div>
+<p class="note"><strong>Member:</strong> {{member.name}}</p>
+{% if not verified %}
+<p>নিজের Nominee Information দেখতে আপনার ব্যক্তিগত ৪ সংখ্যার PIN দিন।</p>
+{% if error %}<div class="flash error">{{error}}</div>{% endif %}
+<form method="post" class="add-member-form">
+<label>Nominee PIN</label><input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" minlength="4" autocomplete="off" required>
+<button>Verify PIN</button>
+</form>
+<p class="note">প্রথমবারের PIN: <strong>1234</strong>। প্রথমবার প্রবেশের পর অবশ্যই নিজের নতুন PIN সেট করুন। PIN ভুলে গেলে Admin-কে Reset করতে বলুন।</p>
+{% else %}
+{% if initial_pin and not admin %}
+<div class="flash error"><strong>এটি আপনার Initial PIN। নিরাপত্তার জন্য Nominee Information দেখার আগে একটি নতুন ৪ সংখ্যার PIN সেট করুন।</strong></div>
+{% else %}
+<div class="profile panel">
+{% if member.nominee_photo %}<img src="{{member.nominee_photo}}" class="profilephoto" alt="Nominee Photo">{% else %}<div class="avatar">👤</div>{% endif %}
+<div class="profile-info"><h2>{{member.nominee_name or '—'}}</h2>
+<p><strong>নাম:</strong> {{member.nominee_name or '—'}}</p>
+<p><strong>মোবাইল:</strong> {{member.nominee_mobile or '—'}}</p>
+<p><strong>NID Number:</strong> {{member.nominee_nid or '—'}}</p>
+</div></div>
+{% endif %}
+<h3>{% if initial_pin and not admin %}Set Your Personal Nominee PIN{% else %}Change Nominee PIN{% endif %}</h3>
+<form method="post" action="/member/{{member.id}}/nominee/change-pin" class="add-member-form">
+{% if not admin %}<label>Current PIN</label><input type="password" name="current_pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" minlength="4" autocomplete="off" required>{% endif %}
+<label>New PIN (৪ সংখ্যা)</label><input type="password" name="new_pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" minlength="4" autocomplete="new-password" required>
+<label>Confirm New PIN</label><input type="password" name="confirm_pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" minlength="4" autocomplete="new-password" required>
+<button>{% if initial_pin and not admin %}Set New PIN{% else %}Change PIN{% endif %}</button></form>
+{% endif %}
+<a class="button secondary" href="/member/{{member.id}}">Back to Member Profile</a>
+</div></main></body></html>
