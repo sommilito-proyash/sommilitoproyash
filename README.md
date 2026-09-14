@@ -69,3 +69,35 @@ After the v6.5.2 migration, run the extension SQL included at the end of `v6.5.2
 - Initial nominee PIN is 1234 for members without a PIN. Members must change it before viewing their nominee details.
 - Admin can reset any member's nominee PIN to 1234 without seeing the current PIN.
 - Nominee PINs are stored as password hashes.
+
+
+## Version 6.6.1
+- Added editable Public Home sections: About, Address/Contact, Social Activities.
+- Current Committee is private to Member/Admin area.
+- Added Meeting archive for Member/Admin; clicking a meeting opens Agenda, Decisions and Minutes.
+- Added Admin-managed Photo Gallery with Public/Member visibility and album/year fields.
+- Gallery, committee and background images are resized and compressed to WebP before upload.
+- Added Admin-managed Home and private-area background images.
+- Added Member all-years CSV/print report.
+- Added Admin all-members/all-years CSV/print report.
+- Existing V6.5.8 common Member Login, Admin Login, nominee PIN, financial calculations and backup remain intact.
+- Run `v6.6.1_supabase_migration.sql` once in Supabase SQL Editor.
+
+
+## v6.6.4 changes
+- Fixed/strengthened Background Image upload and site_settings persistence.
+- Added dedicated public `site-assets` Supabase Storage bucket.
+- Added current background previews and remove buttons.
+- Admin settings now work as a collapsible control center: only the selected section opens.
+- Added Reports & Full Backup to the Admin settings menu.
+- Refined Home, Member Login and Admin Login responsive UI.
+- Preserved all existing financial calculation routes and data structures.
+- Added compatibility for both `member_password_hash` and legacy `member_password_hasl`.
+- Run `v6.6.4_supabase_migration.sql` once in Supabase SQL Editor before deployment.
+
+
+## v6.6.5 changes
+- Added a fixed, low-opacity watermark background layer that remains visible while scrolling, including mobile layouts.
+- Refined button colors and text contrast across the site for clearer, more professional controls.
+- Improved report Download/Print button contrast and mobile sizing.
+- Financial calculation and database migration logic preserved.

@@ -1,1 +1,21 @@
-<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Login — সম্মিলিত প্রয়াস</title><link rel="stylesheet" href="/static/style.css"></head><body><main class="login"><div class="panel login-panel"><img class="login-logo" src="/static/logo.svg" alt="সম্মিলিত প্রয়াস"><h2>Admin Login</h2><p class="note">শুধু Admin-এর জন্য</p>{% if error %}<div class="error">{{error}}</div>{% endif %}<form method="post"><label>Password</label><input type="password" name="password" required><button type="submit">Login</button></form><p><a href="/member-login">Member Login</a></p></div></main></body></html>
+<!doctype html>
+<html lang="bn">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Login — সম্মিলিত প্রয়াস</title><link rel="stylesheet" href="/static/style.css"></head>
+<body class="auth-page" style="--site-bg-image:url('{{ site_content.home_background_url|e if site_content is defined else "" }}');">
+<main class="auth-shell">
+  <section class="auth-card">
+    <div class="auth-brand"><img src="/static/logo.svg" alt="সম্মিলিত প্রয়াস"><span>Administration</span></div>
+    <div class="auth-icon">⚙️</div>
+    <h1>Admin Login</h1>
+    <p class="auth-subtitle">শুধুমাত্র অনুমোদিত Admin-এর জন্য</p>
+    {% if error %}<div class="error">{{error}}</div>{% endif %}
+    <form method="post" class="auth-form">
+      <label>Admin Password</label><input type="password" name="password" autocomplete="current-password" placeholder="Admin Password" required>
+      <button type="submit">Login as Admin</button>
+    </form>
+    <div class="auth-links"><a href="/">← Home</a><a href="/member-login">Member Login</a></div>
+    <p class="auth-note">Admin Login-এর মাধ্যমে সদস্য, হিসাব, নোটিশ, কমিটি, সভা, গ্যালারি ও সাইট সেটিংস পরিচালনা করা যাবে।</p>
+  </section>
+</main>
+</body></html>

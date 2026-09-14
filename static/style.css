@@ -563,3 +563,385 @@ th{
 .member-financial-summary b{font-weight:700;color:#334155}
 @media (max-width:600px){.member-list-item{align-items:flex-start}.member-list-item .mini{margin-top:2px}.member-financial-summary{font-size:.78rem}}
 
+
+
+/* v6.6.0 public/private content and gallery */
+.site-home,.private-area{
+  min-height:100vh;
+  background-color:#f5f8fc;
+  background-image:linear-gradient(rgba(245,248,252,.88),rgba(245,248,252,.88)),var(--site-bg-image);
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.info-grid>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:13px;padding:15px}
+.info-grid h2{margin-top:0;font-size:1.15rem}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.gallery-card{margin:0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 3px 12px rgba(15,23,42,.05)}
+.gallery-card img{display:block;width:100%;height:170px;object-fit:cover}
+.gallery-card figcaption{padding:9px 10px}
+.gallery-card figcaption strong,.gallery-card figcaption small{display:block}
+.gallery-card figcaption small{color:#64748b;margin-top:3px}
+.committee-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.committee-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px}
+.committee-card img{width:76px;height:76px;border-radius:50%;object-fit:cover;margin-bottom:8px}
+.committee-card strong{color:#1d4ed8}
+.committee-card span{margin-top:3px}
+.meeting-list{display:grid;gap:8px}
+.meeting-item{display:flex;gap:12px;align-items:center;padding:11px 13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;text-decoration:none;color:inherit}
+.meeting-item strong{color:#1d4ed8;min-width:105px}
+.meeting-item:hover{background:#eff6ff}
+.preformatted{white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:13px;min-height:35px}
+.meeting-detail h2{margin-top:24px}
+.meeting-admin{border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:10px;background:#f8fafc}
+.meeting-admin summary{cursor:pointer;font-weight:700}
+.gallery-admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+.gallery-admin-grid>div{border:1px solid #e2e8f0;border-radius:10px;padding:8px;background:#fff}
+.gallery-admin-grid img{width:100%;height:120px;object-fit:cover;border-radius:7px}
+.gallery-admin-grid small{display:block;margin:5px 0;color:#475569}
+@media(max-width:800px){.info-grid{grid-template-columns:1fr}.site-home,.private-area{background-attachment:scroll}.meeting-item{align-items:flex-start;flex-direction:column;gap:3px}}
+@media print{.site-home,.private-area{background:none!important}.site-home::before,.private-area::before{display:none}}
+
+
+/* Admin settings navigation */
+.admin-settings-menu{
+  scroll-margin-top:20px;
+  background:linear-gradient(135deg,#f8fbff,#f0fdfa);
+}
+.admin-settings-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+.admin-setting-link{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:48px;
+  padding:11px 13px;
+  border:1px solid #dbe4f0;
+  border-radius:11px;
+  background:#fff;
+  color:#1e3a8a;
+  text-decoration:none;
+  font-weight:700;
+  box-shadow:0 2px 8px rgba(15,23,42,.04);
+  transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+}
+.admin-setting-link:hover{
+  transform:translateY(-1px);
+  box-shadow:0 5px 14px rgba(15,23,42,.10);
+  background:#f8fbff;
+}
+.admin-setting-section{
+  scroll-margin-top:20px;
+  transition:box-shadow .25s ease,border-color .25s ease;
+}
+.admin-setting-focus{
+  border-color:#60a5fa;
+  box-shadow:0 0 0 3px rgba(59,130,246,.14),0 8px 24px rgba(15,23,42,.08);
+}
+@media(max-width:600px){
+  .admin-settings-grid{grid-template-columns:1fr;}
+  .admin-setting-link{min-height:44px;}
+}
+
+
+/* v6.6.3 professional UI refinement */
+.hero{
+  position:relative;
+  overflow:hidden;
+  padding:clamp(24px,5vw,52px);
+  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(239,246,255,.93));
+}
+.hero:after{
+  content:"";
+  position:absolute;right:-90px;top:-90px;width:240px;height:240px;border-radius:50%;
+  background:rgba(37,99,235,.08);pointer-events:none;
+}
+.hero h1{font-size:clamp(1.8rem,4vw,3rem);margin:0}
+.hero>p{max-width:850px;font-size:1.06rem;color:#475569}
+.info-grid>div{transition:transform .18s ease,box-shadow .18s ease}
+.info-grid>div:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,23,42,.08)}
+.admin-setting-section{display:none}
+.admin-setting-section.active{display:block}
+.setting-heading{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.setting-heading>span{font-size:1.8rem;line-height:1}
+.setting-heading h2{margin:0}
+.setting-heading .note{margin:.25rem 0 0}
+.admin-settings-menu{position:relative}
+.admin-settings-menu:before{content:"CONTROL CENTER";display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.12em;color:#2563eb;margin-bottom:4px}
+.admin-settings-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.admin-setting-link{min-height:58px;justify-content:flex-start}
+.admin-setting-link:after{content:"›";margin-left:auto;font-size:1.35rem;color:#94a3b8}
+.admin-setting-focus{border-color:#2563eb!important}
+.background-preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:16px}
+.background-preview-grid>div{padding:10px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}
+.background-preview-grid img{width:100%;height:150px;object-fit:cover;border-radius:9px;display:block;margin-bottom:8px}
+.background-preview-grid small{display:block;font-weight:700;margin-bottom:8px}
+.auth-page{
+  min-height:100vh;
+  background-color:#eef4fb;
+  background-image:linear-gradient(rgba(15,23,42,.46),rgba(15,23,42,.58)),var(--site-bg-image);
+  background-size:cover;background-position:center;background-attachment:fixed;
+}
+.auth-shell{min-height:100vh;display:grid;place-items:center;padding:24px 14px}
+.auth-card{
+  width:min(460px,100%);background:rgba(255,255,255,.97);border:1px solid rgba(255,255,255,.7);
+  border-radius:22px;padding:28px;box-shadow:0 20px 60px rgba(15,23,42,.24);backdrop-filter:blur(8px);
+}
+.auth-brand{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#475569;font-weight:800}
+.auth-brand img{width:min(260px,72%);max-height:65px;object-fit:contain}
+.auth-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:16px;background:#eff6ff;font-size:1.5rem;margin:24px 0 10px}
+.auth-card h1{margin:0;font-size:1.9rem}
+.auth-subtitle{color:#64748b;margin:5px 0 20px}
+.auth-form{text-align:left}
+.auth-form label{display:block;font-weight:700;margin:12px 0 6px}
+.auth-form input{width:100%;padding:13px 14px;border:1px solid #cbd5e1;border-radius:11px;font-size:1rem;outline:none}
+.auth-form input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.auth-form button{width:100%;padding:13px;margin-top:16px;font-size:1rem}
+.auth-links{display:flex;justify-content:space-between;gap:10px;margin-top:18px}
+.auth-links a{font-weight:700;color:#1d4ed8;text-decoration:none}
+.auth-note{font-size:.84rem;color:#64748b;border-top:1px solid #e2e8f0;margin:18px 0 0;padding-top:14px}
+@media(max-width:600px){
+  .hero{padding:24px 18px}
+  .auth-card{padding:22px 18px;border-radius:18px}
+  .auth-brand img{width:68%}
+  .auth-links{flex-direction:column;gap:8px}
+}
+
+/* v6.6.5 — visible watermark background + accessible button system */
+body.site-home, body.private-area, body.auth-page{
+  position:relative;
+  isolation:isolate;
+  background-color:#f5f8fc;
+  background-image:none;
+}
+
+/* Fixed watermark layer: remains visible while the page scrolls, including mobile. */
+body.site-home::before,
+body.private-area::before,
+body.auth-page::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background-image:var(--site-bg-image);
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+  opacity:.13;
+}
+
+/* Keep the content surfaces slightly translucent so the watermark is visible without hurting readability. */
+.site-home .panel,
+.private-area .panel,
+.site-home .notice-board,
+.private-area .notice-board{
+  background-color:rgba(255,255,255,.93);
+}
+.site-home .hero{
+  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(239,246,255,.92));
+}
+.site-home .info-grid>div,
+.private-area .info-grid>div,
+.site-home .cards>div,
+.private-area .cards>div{
+  background-color:rgba(255,255,255,.94);
+}
+
+/* Accessible, consistent button palette */
+:root{
+  --btn-primary:#155e75;
+  --btn-primary-hover:#0e4f63;
+  --btn-secondary:#334155;
+  --btn-secondary-hover:#1e293b;
+  --btn-success:#166534;
+  --btn-success-hover:#14532d;
+  --btn-danger:#b91c1c;
+  --btn-danger-hover:#991b1b;
+  --btn-light:#ffffff;
+  --btn-light-text:#0f3f5c;
+}
+
+button,
+.button,
+nav a{
+  min-height:40px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  line-height:1.25;
+  text-shadow:none;
+}
+
+button,
+.button{
+  background:var(--btn-primary);
+  color:#fff;
+  border:1px solid var(--btn-primary);
+  box-shadow:0 2px 7px rgba(15,23,42,.10);
+}
+
+button:hover,
+.button:hover{
+  background:var(--btn-primary-hover);
+  color:#fff;
+  border-color:var(--btn-primary-hover);
+}
+
+button:focus-visible,
+.button:focus-visible,
+nav a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible{
+  outline:3px solid rgba(14,116,144,.28);
+  outline-offset:2px;
+}
+
+.button.secondary,
+button.secondary,
+.secondary{
+  background:var(--btn-secondary)!important;
+  color:#fff!important;
+  border-color:var(--btn-secondary)!important;
+}
+.button.secondary:hover,
+button.secondary:hover,
+.secondary:hover{
+  background:var(--btn-secondary-hover)!important;
+  border-color:var(--btn-secondary-hover)!important;
+}
+
+.button.success,
+button.success,
+.success{
+  background:var(--btn-success)!important;
+  color:#fff!important;
+  border-color:var(--btn-success)!important;
+}
+.button.success:hover,
+button.success:hover,
+.success:hover{
+  background:var(--btn-success-hover)!important;
+  border-color:var(--btn-success-hover)!important;
+}
+
+.button.danger,
+button.danger,
+.danger{
+  background:var(--btn-danger)!important;
+  color:#fff!important;
+  border-color:var(--btn-danger)!important;
+}
+.button.danger:hover,
+button.danger:hover,
+.danger:hover{
+  background:var(--btn-danger-hover)!important;
+  border-color:var(--btn-danger-hover)!important;
+}
+
+nav a{
+  background:#fff;
+  color:#123b56;
+  border:1px solid rgba(255,255,255,.8);
+  box-shadow:0 2px 8px rgba(15,23,42,.10);
+}
+nav a:hover{
+  background:#f0fdfa;
+  color:#0e4f63;
+}
+
+/* Payment toggle buttons remain visually meaningful but readable. */
+button.toggle{
+  min-width:38px;
+  min-height:34px;
+  padding:6px 9px;
+  font-weight:800;
+}
+button.toggle.paid,
+.toggle.paid{
+  background:#166534!important;
+  color:#fff!important;
+  border-color:#166534!important;
+}
+button.toggle.due,
+.toggle.due{
+  background:#b91c1c!important;
+  color:#fff!important;
+  border-color:#b91c1c!important;
+}
+
+/* Report actions: strong contrast and clear semantic distinction. */
+.action-grid .button,
+.report-actions .button{
+  min-height:46px;
+  text-align:center;
+}
+.action-grid .button.download,
+.report-actions .button.download{
+  background:#155e75!important;
+  color:#fff!important;
+  border-color:#155e75!important;
+}
+.action-grid .button.download:hover,
+.report-actions .button.download:hover{
+  background:#0e4f63!important;
+}
+.action-grid .button.print,
+.report-actions .button.print{
+  background:#334155!important;
+  color:#fff!important;
+  border-color:#334155!important;
+}
+.action-grid .button.print:hover,
+.report-actions .button.print:hover{
+  background:#1e293b!important;
+}
+
+.print-actions{
+  flex-wrap:wrap;
+  align-items:center;
+}
+.print-actions button,
+.print-actions .button{
+  min-height:44px;
+}
+
+/* Better readability for links that look like controls. */
+.admin-setting-link,
+.year,
+.meeting-item,
+.member-list-item{
+  color:#17324d;
+}
+.admin-setting-link:hover,
+.year:hover{
+  color:#0e4f63;
+}
+.year.active{
+  background:#155e75;
+  color:#fff;
+}
+
+/* Small screens: don't let long action labels become cramped. */
+@media(max-width:600px){
+  .action-grid .button,
+  .report-actions .button,
+  .print-actions button,
+  .print-actions .button{
+    width:100%;
+  }
+}
+
+/* Print should remain clean and never show the watermark. */
+@media print{
+  body.site-home::before,
+  body.private-area::before,
+  body.auth-page::before{display:none!important}
+}

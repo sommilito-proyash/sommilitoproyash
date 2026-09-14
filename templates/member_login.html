@@ -1,1 +1,22 @@
-<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Member Login — সম্মিলিত প্রয়াস</title><link rel="stylesheet" href="/static/style.css"></head><body><main class="login"><div class="panel login-panel"><img class="login-logo" src="/static/logo.svg" alt="সম্মিলিত প্রয়াস"><h2>Member Login</h2><p class="note">Memberদের জন্য Common Login</p>{% if error %}<div class="error">{{error}}</div>{% endif %}<form method="post"><label>Common Email</label><input type="email" name="email" autocomplete="username" required><label>Common Password</label><input type="password" name="password" autocomplete="current-password" required><button>Login</button></form><p><a href="/login">Admin Login</a></p></div></main></body></html>
+<!doctype html>
+<html lang="bn">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Member Login — সম্মিলিত প্রয়াস</title><link rel="stylesheet" href="/static/style.css"></head>
+<body class="auth-page" style="--site-bg-image:url('{{ site_content.home_background_url|e if site_content is defined else "" }}');">
+<main class="auth-shell">
+  <section class="auth-card">
+    <div class="auth-brand"><img src="/static/logo.svg" alt="সম্মিলিত প্রয়াস"><span>Member Portal</span></div>
+    <div class="auth-icon">🔐</div>
+    <h1>Member Login</h1>
+    <p class="auth-subtitle">সমিতির সদস্যদের জন্য নিরাপদ Common Login</p>
+    {% if error %}<div class="error">{{error}}</div>{% endif %}
+    <form method="post" class="auth-form">
+      <label>Common Email</label><input type="email" name="email" autocomplete="username" placeholder="আপনার Common Email" required>
+      <label>Common Password</label><input type="password" name="password" autocomplete="current-password" placeholder="আপনার Common Password" required>
+      <button type="submit">Login to Member Portal</button>
+    </form>
+    <div class="auth-links"><a href="/">← Home</a><a href="/login">Admin Login</a></div>
+    <p class="auth-note">লগইন করার পর সদস্যদের আর্থিক সারাংশ, সদস্য তালিকা, নোটিশ, সভা ও অন্যান্য সংরক্ষিত তথ্য দেখা যাবে।</p>
+  </section>
+</main>
+</body></html>

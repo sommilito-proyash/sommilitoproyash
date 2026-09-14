@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import csv
 import io
 import json
+from PIL import Image
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
@@ -23,6 +24,7 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 BUCKET = "member-photos"
+SITE_BUCKET = "site-assets"
 MONTHS = ["January", "February", "March", "April", "May", "June",
           "July", "August", "September", "October", "November", "December"]
 
@@ -47,11 +49,16 @@ def admin_required(fn):
     return w
 
 
-def ensure_bucket():
+def ensure_bucket(bucket_name=BUCKET, public=True):
+    """Ensure a Storage bucket exists. Safe to call on local and Render startup."""
     try:
-        supabase.storage.create_bucket(BUCKET, options={"public": True})
-    except Exception:
-        pass
+        supabase.storage.create_bucket(bucket_name, options={"public": public})
+    except Exception as exc:
+        # Bucket may already exist; upload code will still report real errors.
+        app.logger.debug("Storage bucket ensure skipped for %s: %s", bucket_name, exc)
+
+def ensure_site_bucket():
+    return ensure_bucket(SITE_BUCKET, public=True)
 
 
 def members_all():
@@ -395,11 +402,105 @@ def comments_for(member_id):
             .order("created_at", desc=True).execute().data or [])
 
 
+
+def _site_setting_rows():
+    try:
+        return supabase.table("site_settings").select("key,value").execute().data or []
+    except Exception:
+        return []
+
+def _site_value(key, default=""):
+    for row in _site_setting_rows():
+        if row.get("key") == key:
+            return row.get("value") or default
+    return default
+
+def save_extra_site_content(values):
+    """Persist editable site settings one key at a time."""
+    for key, value in values.items():
+        supabase.table("site_settings").upsert({
+            "key": key,
+            "value": (value or "").strip()[:5000],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }, on_conflict="key").execute()
+
+def committee_all():
+    try:
+        return supabase.table("committee").select("*").eq("active", True).order("sort_order").order("id").execute().data or []
+    except Exception:
+        return []
+
+def meetings_all():
+    try:
+        return supabase.table("meetings").select("*").order("meeting_date", desc=True).order("id", desc=True).execute().data or []
+    except Exception:
+        return []
+
+def gallery_all(visibility=None):
+    try:
+        q = supabase.table("gallery_photos").select("*").order("created_at", desc=True)
+        if visibility:
+            q = q.eq("visibility", visibility)
+        return q.execute().data or []
+    except Exception:
+        return []
+
+def optimize_image(file, max_side=1600, quality=78):
+    """Return compact WebP bytes for an uploaded image."""
+    if not file or not file.filename:
+        return None
+    try:
+        file.stream.seek(0)
+        im = Image.open(file.stream)
+        im = im.convert("RGB")
+        im.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+        bio = io.BytesIO()
+        im.save(bio, format="WEBP", quality=quality, method=6)
+        return bio.getvalue()
+    except Exception:
+        app.logger.exception("Image optimization failed")
+        return None
+
+def upload_site_image(file, path_prefix, max_side=1600, quality=78):
+    """Upload site-managed images to the dedicated public site-assets bucket."""
+    data = optimize_image(file, max_side=max_side, quality=quality)
+    if not data:
+        return None
+    ensure_site_bucket()
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
+    path = f"{path_prefix}/{stamp}.webp"
+    try:
+        supabase.storage.from_(SITE_BUCKET).upload(
+            path, data, {"content-type": "image/webp", "upsert": "false"}
+        )
+        return supabase.storage.from_(SITE_BUCKET).get_public_url(path)
+    except Exception as exc:
+        app.logger.exception("Site image upload failed: %s", exc)
+        return None
+
+def add_gallery_photo(file, title, description, album, year, visibility):
+    url = upload_site_image(file, "gallery", max_side=1600, quality=78)
+    if not url:
+        return False
+    supabase.table("gallery_photos").insert({
+        "title": title[:150], "description": description[:1000],
+        "album": album[:100], "year": int(year) if str(year).isdigit() else None,
+        "visibility": visibility if visibility in ("public", "member") else "public",
+        "image_url": url
+    }).execute()
+    return True
+
 def get_site_content():
     defaults = {
         "home_title": "সম্মিলিত প্রয়াস",
         "home_purpose_title": "আমাদের উদ্দেশ্য",
         "home_purpose_text": "সমিতির সদস্যদের সম্মিলিত সঞ্চয়, পারস্পরিক সহযোগিতা এবং ভবিষ্যৎ ফ্ল্যাট নির্মাণ প্রকল্প বাস্তবায়নের লক্ষ্যে এই উদ্যোগ পরিচালিত হচ্ছে।",
+        "about_title": "About",
+        "about_text": "সম্মিলিত প্রয়াসের উদ্দেশ্য, কার্যক্রম ও সদস্যদের পারস্পরিক সহযোগিতার সংক্ষিপ্ত পরিচিতি এখানে থাকবে।",
+        "address_text": "",
+        "social_activity_text": "",
+        "home_background_url": "",
+        "private_background_url": "",
     }
     try:
         rows = supabase.table("site_settings").select("key,value").execute().data or []
@@ -415,59 +516,84 @@ def save_site_content(home_title, purpose_title, purpose_text):
         supabase.table("site_settings").upsert({"key": key, "value": value, "updated_at": datetime.now(timezone.utc).isoformat()}, on_conflict="key").execute()
 
 
+def _site_settings_schema():
+    """Detect whether site_settings is the original key/value table or a
+    legacy column-based table. Returns a sample row and mode."""
+    try:
+        rows = supabase.table("site_settings").select("*").limit(1).execute().data or []
+        if rows and ("key" in rows[0] and "value" in rows[0]):
+            return "kv", rows[0]
+        if rows and ("member_email" in rows[0] or "member_password_hash" in rows[0] or "member_password_hasl" in rows[0]):
+            return "columns", rows[0]
+    except Exception:
+        pass
+    return "kv", {}
+
+
 def get_setting(key, default=""):
-    if key not in ("member_email", "member_password_hash"):
+    if key not in ("member_email", "member_password_hash", "member_password_hasl"):
         return default
     try:
-        rows = (supabase.table("site_settings")
-                .select(key)
-                .order("id", desc=True)
-                .limit(1)
-                .execute().data or [])
-        return rows[0].get(key, default) if rows else default
+        mode, sample = _site_settings_schema()
+        if mode == "kv":
+            rows = (supabase.table("site_settings").select("key,value")
+                    .eq("key", key).limit(1).execute().data or [])
+            if rows:
+                return rows[0].get("value") or default
+            # Support old typo if a key was stored under it.
+            if key == "member_password_hash":
+                rows = (supabase.table("site_settings").select("key,value")
+                        .eq("key", "member_password_hasl").limit(1).execute().data or [])
+                return rows[0].get("value") or default if rows else default
+            return default
+        row = sample or {}
+        if key == "member_password_hash":
+            return row.get("member_password_hash") or row.get("member_password_hasl") or default
+        return row.get(key) or default
     except Exception:
         return default
 
 
 def set_setting(key, value):
-    if key not in ("member_email", "member_password_hash"):
+    if key not in ("member_email", "member_password_hash", "member_password_hasl"):
         return
-
-    rows = (supabase.table("site_settings")
-            .select("id")
-            .order("id", desc=True)
-            .limit(1)
-            .execute().data or [])
-
+    mode, sample = _site_settings_schema()
+    now = datetime.now(timezone.utc).isoformat()
+    if mode == "kv":
+        supabase.table("site_settings").upsert({
+            "key": key, "value": value, "updated_at": now
+        }, on_conflict="key").execute()
+        return
+    # Legacy column-based schema.
+    column = "member_password_hash" if key == "member_password_hash" and "member_password_hash" in sample else (
+        "member_password_hasl" if key.startswith("member_password_") else key
+    )
+    rows = (supabase.table("site_settings").select("id").order("id", desc=True).limit(1).execute().data or [])
+    payload = {column: value, "updated_at": now}
     if rows:
-        supabase.table("site_settings").update({
-            key: value,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }).eq("id", rows[0]["id"]).execute()
+        supabase.table("site_settings").update(payload).eq("id", rows[0]["id"]).execute()
     else:
-        supabase.table("site_settings").insert({
-            key: value,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }).execute()
+        supabase.table("site_settings").insert(payload).execute()
 
 
 def member_credentials():
-    """Read both login settings with one request."""
+    """Read common member login settings across old and new deployments."""
     try:
-        rows = (supabase.table("site_settings")
-                .select("member_email,member_password_hash")
-                .order("id", desc=True)
-                .limit(1)
-                .execute().data or [])
-        if rows:
-            row = rows[0]
+        mode, sample = _site_settings_schema()
+        if mode == "kv":
+            rows = supabase.table("site_settings").select("key,value").execute().data or []
+            values = {r.get("key"): r.get("value") for r in rows}
             return (
-                (row.get("member_email") or MEMBER_EMAIL_DEFAULT).strip(),
-                row.get("member_password_hash") or ""
+                (values.get("member_email") or MEMBER_EMAIL_DEFAULT).strip(),
+                values.get("member_password_hash") or values.get("member_password_hasl") or ""
             )
+        row = sample or {}
+        return (
+            (row.get("member_email") or MEMBER_EMAIL_DEFAULT).strip(),
+            row.get("member_password_hash") or row.get("member_password_hasl") or ""
+        )
     except Exception:
-        pass
-    return MEMBER_EMAIL_DEFAULT.strip(), ""
+        return MEMBER_EMAIL_DEFAULT.strip(), ""
 
 
 def member_required(fn):
@@ -538,9 +664,16 @@ def index():
                 item["year_summaries"].append({"year": yi, "paid": paid, "arrear": arrear})
             member_list.append(item)
         active_members = member_list
+    committee = committee_all() if logged_member else []
+    meetings = meetings_all() if logged_member else []
+    public_gallery = gallery_all("public")
+    member_gallery = gallery_all("member") if logged_member else []
     return render_template("index.html", logged_member=logged_member,
                            active_members=active_members, admin=session.get("admin", False),
-                           dashboard=dashboard, site_content=site_content, public_notices=public_notices, member_notices=member_notices)
+                           dashboard=dashboard, site_content=site_content,
+                           public_notices=public_notices, member_notices=member_notices,
+                           committee=committee, meetings=meetings,
+                           public_gallery=public_gallery, member_gallery=member_gallery)
 
 
 @app.route("/member/<int:member_id>")
@@ -582,7 +715,9 @@ def member(member_id):
                            grand_paid=grand_paid, grand_arrear=grand_arrear, grand_down=grand_down,
                            setting=setting, admin=session.get("admin", False), comments=comments_for(member_id),
                            bank_balance=bank_balance(), fdrs=fdrs, dps=dps,
-                           total_fdr=total_fdr, total_dps_installment=total_dps_installment)
+                           total_fdr=total_fdr, total_dps_installment=total_dps_installment,
+                           committee=committee_all(), meetings=meetings_all(),
+                           member_gallery=gallery_all("member"), site_content=get_site_content())
 
 
 
@@ -692,8 +827,8 @@ def login():
             session.clear()
             session["admin"] = True
             return redirect(request.args.get("next") or url_for("index"))
-        return render_template("login.html", error="পাসওয়ার্ড সঠিক নয়।")
-    return render_template("login.html", error=None)
+        return render_template("login.html", error="পাসওয়ার্ড সঠিক নয়।", site_content=get_site_content())
+    return render_template("login.html", error=None, site_content=get_site_content())
 
 
 @app.route("/admin/admin-password", methods=["POST"])
@@ -742,8 +877,8 @@ def member_login():
             session.clear()
             session["member"] = True
             return redirect(request.args.get("next") or url_for("index"))
-        return render_template("member_login.html", error="ইমেইল বা পাসওয়ার্ড সঠিক নয়।")
-    return render_template("member_login.html", error=None)
+        return render_template("member_login.html", error="ইমেইল বা পাসওয়ার্ড সঠিক নয়।", site_content=get_site_content())
+    return render_template("member_login.html", error=None, site_content=get_site_content())
 
 
 @app.route("/logout")
@@ -866,7 +1001,9 @@ def admin():
                            active_member_count=len(active_members), site_content=site_content,
                            bank_balance=current_bank_balance, fdrs=current_fdrs, dps=current_dps,
                            fdr_total=current_fdr_total, dps_installment_total=current_dps_installment_total,
-                           dps_paid_total=current_dps_paid_total, investment_settings=current_investments)
+                           dps_paid_total=current_dps_paid_total, investment_settings=current_investments,
+                           committee=committee_all(), meetings=meetings_all(),
+                           public_gallery=gallery_all("public"), member_gallery=gallery_all("member"))
 
 
 @app.route("/admin/report/csv")
@@ -1003,7 +1140,15 @@ def print_member_report(member_id):
 @admin_required
 def update_home_content():
     try:
-        save_site_content(request.form.get("home_title") or "সম্মিলিত প্রয়াস", request.form.get("home_purpose_title") or "আমাদের উদ্দেশ্য", request.form.get("home_purpose_text") or "")
+        save_site_content(request.form.get("home_title") or "সম্মিলিত প্রয়াস",
+                          request.form.get("home_purpose_title") or "আমাদের উদ্দেশ্য",
+                          request.form.get("home_purpose_text") or "")
+        save_extra_site_content({
+            "about_title": request.form.get("about_title") or "About",
+            "about_text": request.form.get("about_text") or "",
+            "address_text": request.form.get("address_text") or "",
+            "social_activity_text": request.form.get("social_activity_text") or "",
+        })
         flash("Home page-এর লেখা সফলভাবে Save হয়েছে।", "ok")
     except Exception:
         app.logger.exception("Home content save failed")
@@ -1461,6 +1606,262 @@ def delete_selected_comments(member_id):
     return redirect(url_for("member", member_id=member_id, year=request.form.get("year", "")))
 
 
+@app.route("/meeting/<int:meeting_id>")
+@member_required
+def meeting_detail(meeting_id):
+    rows = supabase.table("meetings").select("*").eq("id", meeting_id).limit(1).execute().data or []
+    if not rows:
+        abort(404)
+    return render_template("meeting.html", meeting=rows[0], admin=session.get("admin", False))
+
+
+@app.route("/admin/committee/add", methods=["POST"])
+@admin_required
+def add_committee():
+    name=(request.form.get("name") or "").strip()
+    position=(request.form.get("position") or "").strip()
+    if not name or not position:
+        flash("পদ ও নাম দুটোই দিন।","error")
+        return redirect(url_for("admin"))
+    try: sort_order=int(request.form.get("sort_order","0") or 0)
+    except ValueError: sort_order=0
+    photo_url=upload_site_image(request.files.get("photo"), "committee", max_side=800, quality=78)
+    supabase.table("committee").insert({
+        "position":position[:120], "name":name[:150], "photo_url":photo_url or "",
+        "sort_order":sort_order, "active":True
+    }).execute()
+    flash("কমিটির সদস্য যোগ হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/committee/<int:committee_id>/edit", methods=["POST"])
+@admin_required
+def edit_committee(committee_id):
+    payload={"position":(request.form.get("position") or "").strip()[:120],
+             "name":(request.form.get("name") or "").strip()[:150]}
+    try: payload["sort_order"]=int(request.form.get("sort_order","0") or 0)
+    except ValueError: payload["sort_order"]=0
+    photo=upload_site_image(request.files.get("photo"), "committee", max_side=800, quality=78)
+    if photo: payload["photo_url"]=photo
+    supabase.table("committee").update(payload).eq("id",committee_id).execute()
+    flash("কমিটির তথ্য আপডেট হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/committee/<int:committee_id>/delete", methods=["POST"])
+@admin_required
+def delete_committee(committee_id):
+    supabase.table("committee").update({"active":False}).eq("id",committee_id).execute()
+    flash("কমিটির সদস্য সরানো হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/meeting/add", methods=["POST"])
+@admin_required
+def add_meeting():
+    title=(request.form.get("title") or "").strip()
+    date=request.form.get("meeting_date") or ""
+    if not title or not date:
+        flash("Meeting title ও date দিন।","error")
+        return redirect(url_for("admin"))
+    supabase.table("meetings").insert({
+        "meeting_date":date, "title":title[:200],
+        "location":(request.form.get("location") or "").strip()[:200],
+        "chairperson":(request.form.get("chairperson") or "").strip()[:150],
+        "agenda":(request.form.get("agenda") or "").strip()[:5000],
+        "decisions":(request.form.get("decisions") or "").strip()[:5000],
+        "minutes":(request.form.get("minutes") or "").strip()[:10000],
+    }).execute()
+    flash("Meeting সংরক্ষণ হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/meeting/<int:meeting_id>/edit", methods=["POST"])
+@admin_required
+def edit_meeting(meeting_id):
+    payload={
+        "meeting_date":request.form.get("meeting_date") or None,
+        "title":(request.form.get("title") or "").strip()[:200],
+        "location":(request.form.get("location") or "").strip()[:200],
+        "chairperson":(request.form.get("chairperson") or "").strip()[:150],
+        "agenda":(request.form.get("agenda") or "").strip()[:5000],
+        "decisions":(request.form.get("decisions") or "").strip()[:5000],
+        "minutes":(request.form.get("minutes") or "").strip()[:10000],
+    }
+    supabase.table("meetings").update(payload).eq("id",meeting_id).execute()
+    flash("Meeting আপডেট হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/meeting/<int:meeting_id>/delete", methods=["POST"])
+@admin_required
+def delete_meeting(meeting_id):
+    supabase.table("meetings").delete().eq("id",meeting_id).execute()
+    flash("Meeting মুছে ফেলা হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/gallery/add", methods=["POST"])
+@admin_required
+def admin_gallery_add():
+    title=(request.form.get("title") or "").strip()
+    description=(request.form.get("description") or "").strip()
+    album=(request.form.get("album") or "General").strip()
+    year=request.form.get("year") or ""
+    visibility=request.form.get("visibility") or "public"
+    if not title or not request.files.get("photo"):
+        flash("ছবি ও title দিন।","error")
+        return redirect(url_for("admin"))
+    try:
+        ok=add_gallery_photo(request.files.get("photo"), title, description, album, year, visibility)
+        flash("ছবি যোগ হয়েছে এবং compressed WebP হিসেবে সংরক্ষিত হয়েছে।" if ok else "ছবি upload করা যায়নি।","ok" if ok else "error")
+    except Exception:
+        app.logger.exception("Gallery upload failed")
+        flash("Gallery ছবি upload করা যায়নি।","error")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/gallery/<int:photo_id>/delete", methods=["POST"])
+@admin_required
+def admin_gallery_delete(photo_id):
+    supabase.table("gallery_photos").delete().eq("id",photo_id).execute()
+    flash("Gallery ছবি মুছে ফেলা হয়েছে।","ok")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/site-assets", methods=["POST"])
+@admin_required
+def update_site_assets():
+    home_file = request.files.get("home_background")
+    private_file = request.files.get("private_background")
+    values = {}
+    attempted = False
+    failed = []
+
+    if home_file and home_file.filename:
+        attempted = True
+        home = upload_site_image(home_file, "background_home", max_side=1920, quality=76)
+        if home:
+            values["home_background_url"] = home
+        else:
+            failed.append("Home Background")
+
+    if private_file and private_file.filename:
+        attempted = True
+        private = upload_site_image(private_file, "background_private", max_side=1920, quality=76)
+        if private:
+            values["private_background_url"] = private
+        else:
+            failed.append("Member/Admin Background")
+
+    if values:
+        try:
+            save_extra_site_content(values)
+            msg = "Background image সফলভাবে Save হয়েছে।"
+            if failed:
+                msg += " তবে " + ", ".join(failed) + " upload হয়নি।"
+            flash(msg, "ok" if not failed else "error")
+        except Exception as exc:
+            app.logger.exception("Background settings database save failed: %s", exc)
+            flash("ছবি upload হয়েছে, কিন্তু site_settings-এ URL Save হয়নি। v6.6.3 migration SQL Run করুন।", "error")
+    elif attempted:
+        flash("Background image upload করা যায়নি। Supabase Storage-এর site-assets bucket এবং migration নিশ্চিত করুন।", "error")
+    else:
+        flash("কমপক্ষে একটি নতুন background image নির্বাচন করুন।", "error")
+    return redirect(url_for("admin") + "#setting-background")
+
+
+@app.route("/admin/site-assets/clear", methods=["POST"])
+@admin_required
+def clear_site_asset():
+    key = request.form.get("key")
+    if key not in ("home_background_url", "private_background_url"):
+        abort(400)
+    try:
+        save_extra_site_content({key: ""})
+        flash("Background সফলভাবে সরানো হয়েছে।", "ok")
+    except Exception:
+        app.logger.exception("Background clear failed")
+        flash("Background সরানো যায়নি।", "error")
+    return redirect(url_for("admin") + "#setting-background")
+
+
+def _member_report_rows_all_years():
+    years=years_all()
+    members=[m for m in members_all() if m.get("active",True)]
+    records=records_for_years(years)
+    settings=annual_settings_all(years)
+    rows=[]
+    for m in members:
+        total_p=total_a=total_d=0.0
+        year_data=[]
+        for y in years:
+            r=records.get((int(y),int(m["id"])), {"payments":[False]*12})
+            st=settings.get(int(y)) or default_annual_setting(y)
+            paid,arrear,down=stats(r,m,st)
+            total_p+=paid; total_a+=arrear; total_d+=down
+            year_data.append((int(y),paid,arrear,down))
+        rows.append((m,total_p,total_a,total_d,year_data))
+    return years,rows
+
+
+@app.route("/member/<int:member_id>/report/all/csv")
+@member_required
+def download_member_report_all_csv(member_id):
+    m=member_by_id(member_id)
+    if not m: abort(404)
+    years, rows=_member_report_rows_all_years()
+    row=next((x for x in rows if int(x[0]["id"])==member_id),None)
+    if not row: abort(404)
+    out=io.StringIO(); w=csv.writer(out)
+    w.writerow(["Member Financial Report - All Years"]); w.writerow(["Member",m.get("name","")]); w.writerow([])
+    w.writerow(["Year","Deposit","Arrear","Down Payment"])
+    for y,p,a,d in row[4]: w.writerow([y,round(p,2),round(a,2),round(d,2)])
+    w.writerow([]); w.writerow(["All Years Total",round(row[1],2),round(row[2],2),round(row[3],2)])
+    return Response(out.getvalue().encode("utf-8-sig"),mimetype="text/csv; charset=utf-8",
+                    headers={"Content-Disposition":f"attachment; filename=sommilitoproyash-member-{member_id}-all-years-report.csv"})
+
+
+@app.route("/member/<int:member_id>/report/all/print")
+@member_required
+def print_member_report_all(member_id):
+    m=member_by_id(member_id)
+    if not m: abort(404)
+    years, rows=_member_report_rows_all_years()
+    row=next((x for x in rows if int(x[0]["id"])==member_id),None)
+    if not row: abort(404)
+    return render_template("report_all.html", scope="member", member=m, years=years, rows=[row])
+
+
+@app.route("/admin/report/all/csv")
+@admin_required
+def download_admin_report_all_csv():
+    years, rows=_member_report_rows_all_years()
+    out=io.StringIO(); w=csv.writer(out)
+    w.writerow(["All Members Financial Report - All Years"]); w.writerow([])
+    w.writerow(["Member","All Years Deposit","All Years Arrear","All Years Down Payment"])
+    for m,p,a,d,yd in rows: w.writerow([m.get("name",""),round(p,2),round(a,2),round(d,2)])
+    w.writerow([]); w.writerow(["Year","Total Deposit","Total Arrear","Total Down Payment"])
+    for y in years:
+        tp=ta=td=0.0
+        for m,p,a,d,yd in rows:
+            for yy,yp,ya,ydown in yd:
+                if yy==int(y): tp+=yp; ta+=ya; td+=ydown
+        w.writerow([y,round(tp,2),round(ta,2),round(td,2)])
+    return Response(out.getvalue().encode("utf-8-sig"),mimetype="text/csv; charset=utf-8",
+                    headers={"Content-Disposition":"attachment; filename=sommilitoproyash-all-members-all-years-report.csv"})
+
+
+@app.route("/admin/report/all/print")
+@admin_required
+def print_admin_report_all():
+    years, rows=_member_report_rows_all_years()
+    return render_template("report_all.html", scope="admin", years=years, rows=rows)
+
+
+
+
 if __name__ == "__main__":
     ensure_bucket()
+    ensure_site_bucket()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
